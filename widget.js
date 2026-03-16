@@ -25,7 +25,7 @@
     })();
 
   const API_KEY    = scriptEl.dataset.apiKey || '';
-  const API_SERVER = (scriptEl.dataset.server || '').replace(/\/$/, '');
+  const API_SERVER = (scriptEl.dataset.server || 'https://promotion-engine-nnsk.onrender.com').replace(/\/$/, '');
 
   if (!API_KEY) {
     console.warn('[PromoWidget] data-api-key is required — widget disabled.');
@@ -36,7 +36,7 @@
 
   // ─── Config (filled after fetch, safe defaults while loading) ────────────
   const cfg = {
-    server:           API_SERVER || 'http://localhost:3099',
+    server:           API_SERVER || 'https://promotion-engine-nnsk.onrender.com',
     limit:            20,
     lang:             'he',
     platform:         'unknown',
