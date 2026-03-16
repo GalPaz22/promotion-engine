@@ -796,7 +796,7 @@
       grid.innerHTML = '<p style="color:rgba(255,255,255,0.38);font-size:13px">No products to show.</p>';
       return;
     }
-    grid.innerHTML = products.map(p => {
+    grid.innerHTML = products.map((p, idx) => {
       const imgEl = p.image
         ? `<img class="pe-item-img" src="${esc(p.image)}" alt="${esc(p.name)}"
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" loading="lazy" />
