@@ -30,12 +30,11 @@
     ═══════════════════════════════════════════════════════
   -->
   <!--
-    data-api-key is the only required attribute.
-    data-server only needed when widget is served from a different domain.
-    Everything else (limit, lang, atcPatterns) is fetched from the server and cached.
+    LOCAL DEV  → data-server="http://localhost:3099"
+    PRODUCTION → data-server="https://promotion-engine-nnsk.onrender.com"
   -->
   <script
-    src="./widget.js"
+    src="http://localhost:3099/widget.js"
     data-api-key="fe68c9a095700362jif9hh2342gsd23"
     data-server="http://localhost:3099"
   ></script>
