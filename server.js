@@ -276,6 +276,15 @@ import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// widget-loader.js — permanent URL, customers embed this once and never change it
+// Cached aggressively (1 hour) since it barely changes.
+app.get('/widget-loader.js', (_req, res) => {
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+  res.sendFile(path.join(__dirname, 'widget-loader.js'));
+});
+
+// widget.js — full engine, short cache so updates propagate in ~5 min
 app.get('/widget.js', (_req, res) => {
   res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');

@@ -31,18 +31,26 @@
   -->
   <!--
     ═══════════════════════════════════════════════════════════════
-    EMBED — paste these two tags into any page to activate
-    ═══════════════════════════════════════════════════════════════
+    EMBED — paste this single snippet into any page to activate.
+    Only the apiKey + server change per customer; everything else
+    is fetched automatically from the server.
+
     LOCAL DEV  → server: "http://localhost:3099"
     PRODUCTION → server: "https://promotion-engine-nnsk.onrender.com"
+    ═══════════════════════════════════════════════════════════════
   -->
   <script>
     window.PromoSettings = {
-      apiKey: "fe68c9a095700362jif9hh2342gsd23",
-      server: "http://localhost:3099"
+      data-apiKey:  "fe68c9a095700362jif9hh2342gsd23",
+      server:  "http://localhost:3099"
+      // engineSrc: optional — override the widget engine URL
     };
+    (function (d, s) {
+      var e = d.createElement(s); e.async = true;
+      e.src = (window.PromoSettings.server || "https://promotion-engine-nnsk.onrender.com") + "/widget-loader.js";
+      d.head.appendChild(e);
+    })(document, "script");
   </script>
-  <script src="http://localhost:3099/widget.js" async></script>
 
 </body>
 </html>
