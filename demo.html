@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Promotions Discovery</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --black:   #000000;
+      --surface: #0d0d0d;
+      --card:    #111111;
+      --line:    rgba(255,255,255,0.07);
+      --white:   #ffffff;
+      --muted:   rgba(255,255,255,0.38);
+      --accent:  #e8e8e8;
+      --sale:    #ff3b30;
+      --green:   #30d158;
+      --drawer-w: 380px;
+      --panel-w:  400px;
+      --ease:    cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--black);
+      color: var(--white);
+      overflow-x: hidden;
+    }
+
+    /* ═══════════════════════════════════════════
+       CONFIG BAR (top strip)
+    ═══════════════════════════════════════════ */
+    .config-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 24px;
+    }
+
+    .config-logo {
+      font-size: 18px;
+      letter-spacing: -0.5px;
+      font-weight: 600;
+      color: var(--white);
+      white-space: nowrap;
+      margin-right: 8px;
+    }
+    .config-logo span { color: var(--muted); font-weight: 300; }
+
+    .config-input {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px 14px;
+      color: var(--white);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      min-width: 0;
+    }
+    .config-input:focus  { border-color: rgba(255,255,255,0.3); }
+    .config-input::placeholder { color: rgba(255,255,255,0.2); }
+
+    .config-btn {
+      background: var(--white);
+      color: var(--black);
+      border: none;
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s, transform 0.1s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .config-btn:hover   { opacity: 0.88; }
+    .config-btn:active  { transform: scale(0.97); }
+    .config-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ═══════════════════════════════════════════
+       PAGE BACKGROUND — blurred store backdrop
+    ═══════════════════════════════════════════ */
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 40%, rgba(30,30,40,0.8) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 80% at 20% 80%, rgba(10,10,20,0.9) 0%, transparent 60%),
+        var(--black);
+    }
+    .backdrop-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 80px 80px;
+    }
+    .backdrop-glow {
+      position: absolute;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,59,48,0.04) 0%, transparent 70%);
+      top: 10%; right: 10%;
+    }
+
+    /* ═══════════════════════════════════════════
+       PAGE CONTENT (placeholder store)
+    ═══════════════════════════════════════════ */
+    .page-content {
+      position: relative;
+      z-index: 1;
+      padding-top: 64px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .idle-state {
+      text-align: center;
+      padding: 40px 24px;
+    }
+    .idle-state h2 {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      max-width: 320px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .idle-spinner {
+      width: 40px; height: 40px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-top-color: rgba(255,255,255,0.5);
+      border-radius: 50%;
+      animation: spin 1.2s linear infinite;
+      margin: 20px auto;
+      display: none;
+    }
+    .idle-spinner.active { display: block; }
+
+    /* ═══════════════════════════════════════════
+       DRAWER — horizontal card, slides up from bottom-left
+    ═══════════════════════════════════════════ */
+    .drawer {
+      position: fixed;
+      bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+      left: 24px;
+      transform: translateY(calc(100% + 60px));
+      visibility: hidden;
+      z-index: 200;
+      width: var(--drawer-w);
+      border-radius: 16px;
+      overflow: hidden;
+      background: #141414;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.08),
+        0 24px 60px rgba(0,0,0,0.85),
+        0 0 40px rgba(255,59,48,0.05);
+      /* visibility hides after slide-out completes; shows instantly on open */
+      transition: transform 0.55s var(--ease), visibility 0s 0.55s;
+      will-change: transform;
+      display: flex;
+      flex-direction: column;
+    }
+    .drawer.open {
+      transform: translateY(0);
+      visibility: visible;
+      transition: transform 0.55s var(--ease), visibility 0s 0s;
+    }
+
+    /* ── horizontal main area: image + content side by side ── */
+    .drawer-main {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      position: relative;
+    }
+
+    /* product image — fixed left column */
+    .drawer-img-wrap {
+      position: relative;
+      width: 100px;
+      flex-shrink: 0;
+      overflow: hidden;
+      background: #0a0a0a;
+    }
+    .drawer-img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 6s ease;
+    }
+    .drawer:hover .drawer-img { transform: scale(1.06); }
+
+    .drawer-img-placeholder {
+      width: 100%; height: 100%;
+      min-height: 90px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
+      background: linear-gradient(160deg, #1a1a1a, #0a0a0a);
+    }
+
+    /* right-edge gradient fading image into content */
+    .drawer-img-gradient {
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 40px;
+      background: linear-gradient(to right, transparent, #141414);
+      pointer-events: none;
+    }
+
+    /* sale pill */
+    .drawer-sale-pill {
+      position: absolute;
+      top: 8px; left: 8px;
+      background: var(--sale);
+      color: #fff;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+
+    /* close button */
+    .drawer-close {
+      position: absolute;
+      top: 8px; right: 8px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      z-index: 2;
+      transition: background 0.15s, color 0.15s;
+    }
+    .drawer-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+    /* content column */
+    .drawer-body {
+      flex: 1;
+      min-width: 0;
+      padding: 14px 14px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .drawer-category {
+      font-size: 8.5px;
+      font-weight: 500;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .drawer-name {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--white);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .drawer-price-row {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      margin-top: 2px;
+    }
+    .drawer-price-main {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .drawer-price {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.5px;
+    }
+    .drawer-promo-tag {
+      font-size: 9.5px;
+      color: var(--sale);
+      font-weight: 600;
+    }
+    .drawer-original-price {
+      font-size: 10px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.45);
+      text-decoration: line-through;
+    }
+    .drawer-original-price::before {
+      content: 'היה ';
+      text-decoration: none;
+      display: inline;
+      color: rgba(255,255,255,0.28);
+    }
+
+    /* CTA — full-width bottom strip */
+    .drawer-divider {
+      height: 1px;
+      background: var(--line);
+    }
+
+    .drawer-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .drawer-cta:hover { background: rgba(255,255,255,0.03); }
+    .drawer-cta:active { background: rgba(255,255,255,0.06); }
+
+    .drawer-cta-text {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent);
+      direction: rtl;
+      text-align: right;
+      line-height: 1.4;
+    }
+    .drawer-cta-arrow {
+      font-size: 14px;
+      color: var(--muted);
+      transition: transform 0.2s, color 0.2s;
+      flex-shrink: 0;
+    }
+    .drawer-cta:hover .drawer-cta-arrow {
+      transform: translateX(3px);
+      color: var(--white);
+    }
+
+    /* ═══════════════════════════════════════════
+       SIDE PANEL — slides in from the left
+    ═══════════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(6px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-panel {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: var(--panel-w);
+      background: #0f0f0f;
+      border-right: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.45s var(--ease);
+      overflow: hidden;
+    }
+    .modal-overlay.open .modal-panel {
+      transform: translateX(0);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+    .modal-header-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .modal-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--white);
+    }
+    .modal-count {
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 2px 9px;
+    }
+    .modal-personalized {
+      font-size: 10px;
+      color: var(--sale);
+      background: rgba(255,59,48,0.08);
+      border: 1px solid rgba(255,59,48,0.2);
+      border-radius: 20px;
+      padding: 2px 9px;
+      font-weight: 500;
+    }
+    .modal-close {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.12); color: var(--white); }
+
+    .modal-body {
+      overflow-y: auto;
+      padding: 18px 16px 28px;
+      flex: 1;
+    }
+    .modal-body::-webkit-scrollbar { width: 3px; }
+    .modal-body::-webkit-scrollbar-track { background: transparent; }
+    .modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    /* Profile affinities row */
+    .modal-affinities {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .modal-affinities-label {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+    .affinity-pill {
+      font-size: 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 2px 9px;
+      color: var(--accent);
+    }
+
+    /* Products list — single column in the narrow panel */
+    .modal-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* horizontal row card for the side panel */
+    .m-card {
+      background: #181818;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      transition: background 0.18s, border-color 0.18s;
+    }
+    .m-card:hover {
+      background: #1e1e1e;
+      border-color: rgba(255,255,255,0.13);
+    }
+
+    .m-card-img-wrap {
+      position: relative;
+      width: 70px;
+      flex-shrink: 0;
+      overflow: hidden;
+      background: #0a0a0a;
+    }
+    .m-card-img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s var(--ease);
+    }
+    .m-card:hover .m-card-img { transform: scale(1.06); }
+    .m-card-img-placeholder {
+      width: 100%; height: 100%;
+      min-height: 72px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+    }
+    .m-card-sale-dot {
+      position: absolute;
+      top: 6px; right: 6px;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--sale);
+      box-shadow: 0 0 6px rgba(255,59,48,0.7);
+    }
+
+    .m-card-body {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
+    }
+    .m-card-cat {
+      font-size: 8px;
+      font-weight: 500;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .m-card-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--white);
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .m-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+    .m-card-price {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--white);
+    }
+    .m-card-original-price {
+      display: inline;
+      font-size: 10px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.4);
+      text-decoration: line-through;
+      margin-left: 5px;
+    }
+    .m-card-link {
+      font-size: 11px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .m-card-link:hover { color: var(--white); }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════ */
+
+    /* Tablet: tighten config bar, shrink panel */
+    @media (max-width: 768px) {
+      :root {
+        --drawer-w: calc(100vw - 32px);
+        --panel-w:  100vw;
+      }
+
+      /* config bar: stack inputs below logo+button */
+      .config-bar {
+        flex-wrap: wrap;
+        padding: 10px 16px;
+        gap: 8px;
+      }
+      .config-logo { font-size: 15px; margin-right: 0; }
+      .config-input { min-width: 0; font-size: 12px; }
+      .config-btn   { font-size: 12px; padding: 7px 14px; }
+      #errMsg       { width: 100%; }
+
+      /* product card: full-width at bottom, higher up */
+      .drawer {
+        left: 16px;
+        right: 16px;
+        bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+        width: auto;
+      }
+      .drawer-img-wrap { width: 88px; }
+
+      /* side panel: full-width sheet from left */
+      .modal-panel {
+        width: 100vw;
+        border-right: none;
+        border-top: 1px solid rgba(255,255,255,0.07);
+      }
+    }
+
+    /* Phone: stack config bar fully, compact card */
+    @media (max-width: 480px) {
+      .config-bar {
+        padding: 8px 12px;
+        gap: 6px;
+      }
+      .config-logo { font-size: 14px; }
+      .config-input {
+        padding: 7px 10px;
+        font-size: 12px;
+      }
+      .config-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 9px 14px;
+      }
+
+      .page-content { padding-top: 120px; }
+
+      /* card sits higher above mobile browser chrome */
+      .drawer {
+        left: 12px;
+        right: 12px;
+        bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+      }
+      .drawer-img-wrap  { width: 76px; }
+      .drawer-name      { font-size: 11px; }
+      .drawer-price     { font-size: 13px; }
+      .drawer-body      { padding: 10px 10px 10px 8px; }
+      .drawer-cta       { padding: 9px 12px; }
+      .drawer-cta-text  { font-size: 10px; }
+
+      /* panel fills screen */
+      .modal-panel { width: 100vw; }
+      .modal-header { padding: 16px 14px 12px; }
+      .modal-body   { padding: 14px 12px 24px; }
+    }
+
+    /* ═══════════════════════════════════════════
+       UTILITIES
+    ═══════════════════════════════════════════ */
+    .spinner {
+      width: 14px; height: 14px;
+      border: 1.5px solid rgba(0,0,0,0.2);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-msg {
+      color: var(--sale);
+      font-size: 12px;
+      padding: 8px 12px;
+      background: rgba(255,59,48,0.08);
+      border: 1px solid rgba(255,59,48,0.2);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Backdrop ── -->
+<div class="backdrop">
+  <div class="backdrop-grid"></div>
+  <div class="backdrop-glow"></div>
+</div>
+
+<!-- ── Config Bar ── -->
+<div class="config-bar">
+  <span class="config-logo">Promo <span>Engine</span></span>
+
+  <input class="config-input" id="apiKey" type="password" placeholder="API Key (X-API-Key)" />
+  <input class="config-input" id="sessionId" type="text" placeholder="Session ID (optional — personalizes)" />
+
+  <span id="errMsg" class="error-msg" style="display:none"></span>
+
+  <button class="config-btn" id="loadBtn" onclick="loadPromos()">
+    Load Promotions
+  </button>
+</div>
+
+<!-- ── Page center ── -->
+<div class="page-content">
+  <div class="idle-state">
+    <div class="idle-spinner" id="idleSpinner"></div>
+    <h2 id="idleLabel">Enter credentials above to discover personalized promotions</h2>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     DRAWER — left side hero product
+════════════════════════════════════════════════ -->
+<div class="drawer" id="drawer">
+
+  <!-- close -->
+  <button class="drawer-close" onclick="closeDrawer(true)">✕</button>
+
+  <!-- horizontal main row -->
+  <div class="drawer-main">
+
+    <!-- image column -->
+    <div class="drawer-img-wrap">
+      <img class="drawer-img" id="drawerImg" src="" alt="" />
+      <div class="drawer-img-placeholder" id="drawerPlaceholder" style="display:none">🍷</div>
+      <div class="drawer-img-gradient"></div>
+      <span class="drawer-sale-pill" id="drawerSalePill">On Sale</span>
+    </div>
+
+    <!-- content column -->
+    <div class="drawer-body">
+      <div class="drawer-category" id="drawerCategory">—</div>
+      <div class="drawer-name" id="drawerName">—</div>
+      <div class="drawer-price-row">
+        <div class="drawer-price-main">
+          <span class="drawer-price" id="drawerPrice">—</span>
+          <span class="drawer-promo-tag" id="drawerPromoTag"></span>
+        </div>
+        <span class="drawer-original-price" id="drawerOriginalPrice" style="display:none"></span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="drawer-divider"></div>
+
+  <!-- CTA strip -->
+  <div class="drawer-cta" onclick="openModal()">
+    <span class="drawer-cta-arrow">›</span>
+    <span class="drawer-cta-text">לחץ כאן לעוד מבצעים שהתאמנו במיוחד בשבילך</span>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     MODAL — all products
+════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal-panel">
+
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <span class="modal-title">מבצעים מותאמים לך</span>
+        <span class="modal-count" id="modalCount">0 מוצרים</span>
+        <span class="modal-personalized" id="modalPersonalized" style="display:none">✦ מותאם אישית</span>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- affinities -->
+      <div class="modal-affinities" id="modalAffinities" style="display:none">
+        <span class="modal-affinities-label">Profile</span>
+      </div>
+      <!-- grid -->
+      <div class="modal-grid" id="modalGrid"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const BASE_URL = 'http://localhost:3099';
+  let _allProducts = [];
+  let _drawerOpen  = false;
+
+  /* ── helpers ── */
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function price(p) {
+    const n = parseFloat(p);
+    return isNaN(n) ? '—' : `₪${n.toFixed(2)}`;
+  }
+  function firstCat(c) {
+    return [].concat(c||[]).filter(Boolean)[0] || '';
+  }
+  function promoLabel(promos) {
+    const p = [].concat(promos||[])[0];
+    if (!p) return '';
+    if (typeof p === 'string') return p;
+    return p.title || p.name || p.description || '';
+  }
+
+  /* ── fetch ── */
+  async function loadPromos() {
+    const apiKey   = document.getElementById('apiKey').value.trim();
+    const sessionId = document.getElementById('sessionId').value.trim();
+    const btn      = document.getElementById('loadBtn');
+    const spinner  = document.getElementById('idleSpinner');
+    const label    = document.getElementById('idleLabel');
+    const errMsg   = document.getElementById('errMsg');
+
+    if (!apiKey) { showErr('Please enter your API key.'); return; }
+
+    // UI loading state
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Loading…';
+    spinner.classList.add('active');
+    label.textContent = 'Discovering promotions…';
+    errMsg.style.display = 'none';
+    closeDrawer();
+
+    try {
+      const body = { limit: 40 };
+      if (sessionId) body.session_id = sessionId;
+
+      const resp = await fetch(`${BASE_URL}/promotions/discover`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+        body: JSON.stringify(body),
+      });
+
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({ error: resp.statusText }));
+        throw new Error(e.error || `HTTP ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      _allProducts = data.products || [];
+
+      spinner.classList.remove('active');
+      label.textContent = _allProducts.length
+        ? `${_allProducts.length} on-sale products found.`
+        : 'No on-sale products found for this store.';
+
+      if (_allProducts.length > 0) {
+        // populate modal meta
+        document.getElementById('modalCount').textContent = `${_allProducts.length} מוצרים`;
+        const persEl = document.getElementById('modalPersonalized');
+        persEl.style.display = data.personalized ? 'inline' : 'none';
+
+        // affinities
+        renderAffinities(data.profileSnapshot);
+
+        // wait ~1.5s then pop the drawer
+        setTimeout(() => showDrawer(_allProducts[0]), 1500);
+      }
+
+    } catch (err) {
+      spinner.classList.remove('active');
+      label.textContent = 'Could not load promotions.';
+      showErr(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Load Promotions';
+    }
+  }
+
+  /* ── drawer ── */
+  function showDrawer(product) {
+    if (!product) return;
+    if (sessionStorage.getItem('drawerDismissed')) return;
+    const img      = document.getElementById('drawerImg');
+    const ph       = document.getElementById('drawerPlaceholder');
+    const catEl    = document.getElementById('drawerCategory');
+    const nameEl   = document.getElementById('drawerName');
+    const priceEl  = document.getElementById('drawerPrice');
+    const promoEl  = document.getElementById('drawerPromoTag');
+
+    // image
+    if (product.image) {
+      img.src = product.image;
+      img.alt = product.name || '';
+      img.style.display = 'block';
+      ph.style.display = 'none';
+      img.onerror = () => { img.style.display='none'; ph.style.display='flex'; };
+    } else {
+      img.style.display = 'none';
+      ph.style.display = 'flex';
+    }
+
+    catEl.textContent   = firstCat(product.category).toUpperCase() || 'PRODUCT';
+    nameEl.textContent  = product.name || '—';
+    priceEl.textContent = price(product.price);
+
+    const origEl = document.getElementById('drawerOriginalPrice');
+    if (product.originalPrice != null) {
+      origEl.textContent = price(product.originalPrice);
+      origEl.style.display = 'inline';
+    } else {
+      origEl.style.display = 'none';
+    }
+
+    const pl = promoLabel(product.promotions);
+    promoEl.textContent = pl ? `• ${pl}` : '';
+
+    document.getElementById('drawer').classList.add('open');
+    _drawerOpen = true;
+  }
+
+  function closeDrawer(dismiss = false) {
+    document.getElementById('drawer').classList.remove('open');
+    _drawerOpen = false;
+    if (dismiss) sessionStorage.setItem('drawerDismissed', '1');
+  }
+
+  /* ── modal ── */
+  function openModal() {
+    renderModalGrid(_allProducts);
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  }
+
+  function renderAffinities(snapshot) {
+    const wrap = document.getElementById('modalAffinities');
+    const cats = snapshot?.topCategories || [];
+    if (!cats.length) { wrap.style.display = 'none'; return; }
+
+    // remove old pills
+    wrap.querySelectorAll('.affinity-pill').forEach(el => el.remove());
+    cats.forEach(c => {
+      const pill = document.createElement('span');
+      pill.className = 'affinity-pill';
+      pill.textContent = `${c.category} ${c.affinity.toFixed(0)}`;
+      wrap.appendChild(pill);
+    });
+    wrap.style.display = 'flex';
+  }
+
+  function renderModalGrid(products) {
+    const grid = document.getElementById('modalGrid');
+    if (!products.length) {
+      grid.innerHTML = '<p style="color:var(--muted);font-size:13px">No products to show.</p>';
+      return;
+    }
+
+    grid.innerHTML = products.map(p => {
+      const imgEl = p.image
+        ? `<img class="m-card-img" src="${esc(p.image)}" alt="${esc(p.name)}"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" loading="lazy" />
+           <div class="m-card-img-placeholder" style="display:none">🍷</div>`
+        : `<div class="m-card-img-placeholder">🍷</div>`;
+
+      const linkEl = p.url
+        ? `<a class="m-card-link" href="${esc(p.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">↗</a>`
+        : '';
+
+      return `
+        <div class="m-card" onclick="${p.url ? `window.open('${esc(p.url)}','_blank')` : ''}">
+          <div class="m-card-img-wrap">
+            ${imgEl}
+            <div class="m-card-sale-dot"></div>
+          </div>
+          <div class="m-card-body">
+            <div class="m-card-cat">${esc(firstCat(p.category))}</div>
+            <div class="m-card-name">${esc(p.name || '—')}</div>
+            <div class="m-card-footer">
+              <span>
+                <span class="m-card-price">${price(p.price)}</span>
+                ${p.originalPrice != null ? `<span class="m-card-original-price">${price(p.originalPrice)}</span>` : ''}
+              </span>
+              ${linkEl}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  /* ── misc ── */
+  function showErr(msg) {
+    const el = document.getElementById('errMsg');
+    el.textContent = msg;
+    el.style.display = 'inline';
+  }
+
+  // Enter key shortcut
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter'  && !e.target.closest('.modal-overlay')) loadPromos();
+    if (e.key === 'Escape') { closeModal(); closeDrawer(); }
+  });
+</script>
+
+</body>
+</html>

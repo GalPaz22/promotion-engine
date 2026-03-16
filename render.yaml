@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: promotion-engine
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGODB_URI
+        sync: false          # set manually in Render dashboard — never commit this
+      - key: PUBLIC_URL
+        fromService:
+          type: web
+          name: promotion-engine
+          property: host     # auto-filled with https://promotion-engine.onrender.com
+      - key: PORT
+        value: 10000         # Render's default port

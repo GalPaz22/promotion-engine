@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Widget Embed Demo</title>
+  <style>
+    body { font-family: sans-serif; background: #f5f5f5; color: #333; padding: 40px; }
+    h1   { font-size: 22px; margin-bottom: 8px; }
+    p    { color: #666; line-height: 1.6; max-width: 500px; }
+    code { background: #e8e8e8; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    .btn {
+      margin-top: 24px; display: inline-block;
+      background: #111; color: #fff;
+      padding: 10px 22px; border-radius: 8px;
+      cursor: pointer; font-size: 14px; border: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Any existing webpage</h1>
+  <p>This page represents a regular store website. The promotion widget below is injected purely via the <code>&lt;script&gt;</code> tag — no other changes to this page were needed.</p>
+  <p>Click the button below to programmatically open the deals panel:</p>
+  <button class="btn" onclick="PromoWidget.open()">Open Deals Panel</button>
+
+  <!--
+    ═══════════════════════════════════════════════════════
+    EMBED — paste this one line into any page to activate
+    ═══════════════════════════════════════════════════════
+  -->
+  <!--
+    data-api-key is the only required attribute.
+    data-server only needed when widget is served from a different domain.
+    Everything else (limit, lang, atcPatterns) is fetched from the server and cached.
+  -->
+  <script
+    src="./widget.js"
+    data-api-key="fe68c9a095700362jif9hh2342gsd23"
+    data-server="http://localhost:3099"
+  ></script>
+
+</body>
+</html>
