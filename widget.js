@@ -84,7 +84,9 @@
     atcSelector:      '',
   };
 
-  const CFG_CACHE_KEY = 'pe_cfg_v1';
+  // Cache key is scoped to the API key so switching environments never
+  // serves a stale localhost config to a production page.
+  const CFG_CACHE_KEY = 'pe_cfg_v1_' + API_KEY.slice(0, 12);
   const CFG_CACHE_TTL = 5 * 60 * 1000; // 5 min
 
   function readCfgCache() {
@@ -141,11 +143,16 @@
   // ─── Session management ───────────────────────────────────────────────────
   function ensureSessionId() {
     try {
-      let sid = localStorage.getItem('pe_session_id');
-      if (!sid) {
-        sid = 'pe-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
-        localStorage.setItem('pe_session_id', sid);
-      }
+      // Reuse the existing Semantix session if present — keeps all tracking
+      // on a single session ID across both engines.
+      const sid =
+        localStorage.getItem('semantix_session_id') ||
+        localStorage.getItem('pe_session_id') ||
+        (() => {
+          const s = 'pe-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+          localStorage.setItem('pe_session_id', s);
+          return s;
+        })();
       return sid;
     } catch {
       if (!ensureSessionId._mem)
@@ -575,7 +582,7 @@
     };
     log.info(`Event: ${type.toUpperCase()} »`, product.name || payload.product_id);
     // fire-and-forget; use sendBeacon if available so it survives navigation
-    const url  = `${cfg.server}/events`;
+    const url  = `${cfg.server}/pe/signal`;
     const body = JSON.stringify(payload);
     try {
       if (navigator.sendBeacon) {

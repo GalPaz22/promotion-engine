@@ -561,7 +561,7 @@ app.post('/promotions/discover', requireApiKey, async (req, res) => {
  *
  * Headers: X-API-Key
  */
-app.post('/events', requireApiKey, async (req, res) => {
+app.post('/pe/signal', requireApiKey, async (req, res) => {
   const { session_id, event_type, product_id, product_name, category, softCategory } = req.body;
   const { dbName } = req.store;
 
@@ -625,7 +625,7 @@ app.post('/events', requireApiKey, async (req, res) => {
 app.listen(PORT, async () => {
   console.log(`\n🏷️  Promotion Engine running on http://localhost:${PORT}`);
   console.log('   POST /promotions/discover  — personalized on-sale products');
-  console.log('   POST /events               — track view / click / cart events');
+  console.log('   POST /pe/signal             — track view / click / cart events');
   console.log('   GET  /promotions/summary   — store-wide sale stats');
   console.log('   GET  /health\n');
 
