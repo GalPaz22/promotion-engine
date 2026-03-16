@@ -1,18 +1,24 @@
 /**
- * Promotion Engine Widget  —  promo-widget.js
+ * Promotion Engine Widget  —  widget.js
  *
- * Only data-api-key is required. Everything else is fetched from the server
- * and cached in localStorage (5-min TTL, stale-while-revalidate).
+ * Embed (recommended — async safe):
  *
- *   <script src="promo-widget.js"
- *     data-api-key="YOUR_KEY"
- *     data-server="https://your-server.com"  <!-- only needed if not same-origin -->
- *   ></script>
+ *   <script>
+ *     window.PromoSettings = {
+ *       apiKey: "YOUR_KEY",
+ *       server: "https://promotion-engine-nnsk.onrender.com"  // optional
+ *     };
+ *   </script>
+ *   <script src="https://promotion-engine-nnsk.onrender.com/widget.js" async></script>
  *
- * Programmatic API:
- *   window.PromoWidget.open()      — open the side panel
- *   window.PromoWidget.reload()    — re-fetch promotions
- *   window.PromoWidget.sessionId() — returns the current session ID
+ * Config is fetched from the server and cached in localStorage (5-min TTL,
+ * stale-while-revalidate) — no other attributes needed.
+ *
+ * Programmatic API (window.PromoWidget):
+ *   .open()       — open the side panel
+ *   .close()      — close the side panel
+ *   .reload()     — re-fetch promotions
+ *   .sessionId()  — returns the current session ID
  */
 (function () {
   'use strict';
