@@ -33,7 +33,8 @@
 
   // Allow overriding the engine URL (e.g. for A/B testing or versioned deploys).
   // Defaults to widget.js on the same server as the loader.
-  var engineSrc = cfg.engineSrc || (server + '/widget.js');
+  // A version/timestamp query param busts the browser cache on each loader update.
+  var engineSrc = cfg.engineSrc || (server + '/widget.js?v=' + (cfg.v || '1'));
 
   // Avoid double-loading if the snippet fires twice
   if (window.__pe_loader_fired) return;

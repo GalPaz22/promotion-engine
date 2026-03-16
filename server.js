@@ -284,10 +284,13 @@ app.get('/widget-loader.js', (_req, res) => {
   res.sendFile(path.join(__dirname, 'widget-loader.js'));
 });
 
-// widget.js — full engine, short cache so updates propagate in ~5 min
+// widget.js — full engine, short cache in production; no cache in dev
 app.get('/widget.js', (_req, res) => {
   res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
+  const isProd = process.env.NODE_ENV === 'production';
+  res.setHeader('Cache-Control', isProd
+    ? 'public, max-age=300, stale-while-revalidate=3600'
+    : 'no-store');
   res.sendFile(path.join(__dirname, 'widget.js'));
 });
 
