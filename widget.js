@@ -34,6 +34,20 @@
   if (window.__pe_loaded) return;
   window.__pe_loaded = true;
 
+  // ─── Logger ───────────────────────────────────────────────────────────────
+  // All widget output is prefixed and grouped so it's easy to spot in DevTools.
+  const LOG_PREFIX = '%c[PromoWidget]%c';
+  const LOG_STYLE  = 'color:#e8e8e8;background:#e8003d;font-weight:700;padding:1px 4px;border-radius:3px';
+  const LOG_RESET  = 'color:inherit';
+
+  const log = {
+    info:  (...a) => console.log(LOG_PREFIX, LOG_STYLE, LOG_RESET, ...a),
+    warn:  (...a) => console.warn(LOG_PREFIX, LOG_STYLE, LOG_RESET, ...a),
+    error: (...a) => console.error(LOG_PREFIX, LOG_STYLE, LOG_RESET, ...a),
+    group: (label) => console.groupCollapsed(LOG_PREFIX + ' ' + label, LOG_STYLE, LOG_RESET),
+    end:   () => console.groupEnd(),
+  };
+
   // ─── Config (filled after fetch, safe defaults while loading) ────────────
   const cfg = {
     server:           API_SERVER || 'https://promotion-engine-nnsk.onrender.com',
@@ -75,15 +89,30 @@
     if (data.productIdField)   cfg.productIdField   = data.productIdField;
     if (data.quantityField)    cfg.quantityField    = data.quantityField;
     if (data.atcSelector)      cfg.atcSelector      = data.atcSelector;
+
+    log.group('Config applied');
+    log.info('platform:', cfg.platform, '| lang:', cfg.lang, '| limit:', cfg.limit);
+    log.info('ATC patterns:', cfg.atcPatterns.length ? cfg.atcPatterns : '(platform defaults)');
+    log.info('ATC selector:', cfg.atcSelector || '(none)');
+    log.end();
   }
 
   function fetchCfg(onDone) {
+    log.info('Fetching config from server…', cfg.server);
+    const t0 = Date.now();
     fetch(`${cfg.server}/widget/config`, {
       headers: { 'x-api-key': API_KEY },
     })
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(data => { writeCfgCache(data); onDone(data); })
-      .catch(err => { console.warn('[PromoWidget] config fetch failed:', err); onDone(null); });
+      .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
+      .then(data => {
+        log.info(`Config received in ${Date.now() - t0}ms`, data);
+        writeCfgCache(data);
+        onDone(data);
+      })
+      .catch(err => {
+        log.warn('Config fetch failed — running with defaults:', err);
+        onDone(null);
+      });
   }
 
   // ─── Session management ───────────────────────────────────────────────────
@@ -521,6 +550,7 @@
       category:     product.category  || [],
       softCategory: product.softCategory || [],
     };
+    log.info(`Event: ${type.toUpperCase()} »`, product.name || payload.product_id);
     // fire-and-forget; use sendBeacon if available so it survives navigation
     const url  = `${cfg.server}/events`;
     const body = JSON.stringify(payload);
@@ -543,6 +573,9 @@
   function attachCartIntercept() {
     if (window.__pe_cart_intercept) return;
     window.__pe_cart_intercept = true;
+    log.info('Cart intercept active — platform:', cfg.platform,
+      '| patterns:', cfg.atcPatterns.length ? cfg.atcPatterns : '(platform defaults)',
+      cfg.atcSelector ? `| DOM selector: ${cfg.atcSelector}` : '');
 
     // Platform-level fallback patterns (used when store config has none)
     const PLATFORM_PATTERNS = {
@@ -593,6 +626,7 @@
     function onCart(productId) {
       // Look up the product in our loaded list for category/softCategory context
       const product = _products.find(p => String(p.id || p._id) === String(productId)) || { id: productId };
+      log.info('Cart intercept fired — product ID:', productId, product.name ? `(${product.name})` : '');
       trackEvent('cart', product);
     }
 
@@ -677,7 +711,11 @@
   // ─── API ──────────────────────────────────────────────────────────────────
   function showCard(product) {
     if (!product) return;
-    if (sessionStorage.getItem('pe_dismissed')) return;
+    if (sessionStorage.getItem('pe_dismissed')) {
+      log.info('Card suppressed — dismissed this session');
+      return;
+    }
+    log.info('Showing card »', product.name, '| price:', product.displayPrice ?? product.price);
 
     const img  = document.getElementById('pe-img');
     const ph   = document.getElementById('pe-img-ph');
@@ -713,16 +751,19 @@
   }
 
   function dismiss() {
+    log.info('Card dismissed for this session');
     document.getElementById('pe-card').classList.remove('pe-open');
     sessionStorage.setItem('pe_dismissed', '1');
   }
 
   function openPanel() {
+    log.info(`Panel opened — showing ${_products.length} product(s)`);
     renderGrid(_products);
     document.getElementById('pe-overlay').classList.add('pe-open');
   }
 
   function closePanel() {
+    log.info('Panel closed');
     document.getElementById('pe-overlay').classList.remove('pe-open');
   }
 
@@ -778,8 +819,11 @@
 
   // ─── Fetch ────────────────────────────────────────────────────────────────
   async function fetchPromos() {
+    const sid = ensureSessionId();
+    log.info(`Fetching promotions… session=${sid} limit=${cfg.limit}`);
+    const t0 = Date.now();
     try {
-      const body = { limit: cfg.limit, session_id: ensureSessionId() };
+      const body = { limit: cfg.limit, session_id: sid };
 
       const resp = await fetch(`${cfg.server}/promotions/discover`, {
         method:  'POST',
@@ -791,7 +835,16 @@
       const data = await resp.json();
       _products = data.products || [];
 
-      if (_products.length === 0) return;
+      if (_products.length === 0) {
+        log.warn('No promotions returned — card will not show.');
+        return;
+      }
+
+      log.group(`${_products.length} promotions received in ${Date.now() - t0}ms`);
+      log.info('Personalized:', data.personalized ? 'yes' : 'no');
+      log.info('Top product:', _products[0]?.name, '| display price:', _products[0]?.displayPrice);
+      log.info('All products:', _products.map(p => p.name));
+      log.end();
 
       // panel meta
       document.getElementById('pe-panel-count').textContent = `${_products.length} ${t.products}`;
@@ -804,7 +857,7 @@
       setTimeout(() => showCard(_products[0]), 1500);
 
     } catch (err) {
-      console.error('[PromoWidget] fetch error:', err.message);
+      log.error('Promotions fetch failed:', err.message);
     }
   }
 
@@ -833,18 +886,26 @@
   //                 User sees the card as soon as both respond — no extra round-trip.
 
   function boot() {
+    log.group('PromoWidget boot');
+    log.info('API key:', API_KEY.slice(0, 8) + '…', '| server:', cfg.server);
+    log.info('Session ID:', ensureSessionId());
     const cached = readCfgCache();
 
     if (cached) {
-      // ── Cached path: zero network wait ──────────────────────────────────
+      log.info('Cache hit — loading instantly, refreshing config in background');
+      log.end();
       applyCfg(cached);
       mount();
       fetchPromos();
-      // Silently refresh config in background for next visit
-      fetchCfg(fresh => { if (fresh) writeCfgCache(fresh); });
+      fetchCfg(fresh => {
+        if (fresh) {
+          log.info('Background config refresh complete');
+          writeCfgCache(fresh);
+        }
+      });
     } else {
-      // ── Cold path: mount immediately, config + promos in parallel ────────
-      // Cart intercept is live instantly; promo card appears once both resolve.
+      log.info('Cache miss — cold start, fetching config then promotions');
+      log.end();
       mount();
       fetchCfg(data => {
         applyCfg(data);
