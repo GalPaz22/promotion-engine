@@ -17,18 +17,35 @@
 (function () {
   'use strict';
 
-  // ─── Bootstrap: read only what we can't fetch ─────────────────────────────
-  const scriptEl = document.currentScript ||
+  // ─── Bootstrap ────────────────────────────────────────────────────────────
+  // Priority order:
+  //   1. window.PromoSettings  — recommended for async/defer loading
+  //   2. data-* attributes     — fallback for synchronous inline script tags
+  //
+  // Recommended usage (async-safe, matches industry loader pattern):
+  //   <script>
+  //     window.PromoSettings = {
+  //       apiKey: "YOUR_KEY",
+  //       server: "https://promotion-engine-nnsk.onrender.com"  // optional
+  //     };
+  //   </script>
+  //   <script src=".../widget.js" async></script>
+
+  const _settings  = window.PromoSettings || {};
+
+  // data-* fallback — only reliable on synchronous (non-async) script tags
+  const scriptEl   = document.currentScript ||
     (function () {
       const scripts = document.getElementsByTagName('script');
       return scripts[scripts.length - 1];
     })();
+  const _dataset   = scriptEl ? scriptEl.dataset : {};
 
-  const API_KEY    = scriptEl.dataset.apiKey || '';
-  const API_SERVER = (scriptEl.dataset.server || 'https://promotion-engine-nnsk.onrender.com').replace(/\/$/, '');
+  const API_KEY    = _settings.apiKey  || _dataset.apiKey  || '';
+  const API_SERVER = (_settings.server || _dataset.server  || 'https://promotion-engine-nnsk.onrender.com').replace(/\/$/, '');
 
   if (!API_KEY) {
-    console.warn('[PromoWidget] data-api-key is required — widget disabled.');
+    console.warn('[PromoWidget] apiKey is required — widget disabled. Set window.PromoSettings.apiKey or data-api-key.');
     return;
   }
   if (window.__pe_loaded) return;

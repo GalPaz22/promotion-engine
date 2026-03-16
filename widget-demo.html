@@ -30,14 +30,19 @@
     ═══════════════════════════════════════════════════════
   -->
   <!--
-    LOCAL DEV  → data-server="http://localhost:3099"
-    PRODUCTION → data-server="https://promotion-engine-nnsk.onrender.com"
+    ═══════════════════════════════════════════════════════════════
+    EMBED — paste these two tags into any page to activate
+    ═══════════════════════════════════════════════════════════════
+    LOCAL DEV  → server: "http://localhost:3099"
+    PRODUCTION → server: "https://promotion-engine-nnsk.onrender.com"
   -->
-  <script
-    src="http://localhost:3099/widget.js"
-    data-api-key="fe68c9a095700362jif9hh2342gsd23"
-    data-server="http://localhost:3099"
-  ></script>
+  <script>
+    window.PromoSettings = {
+      apiKey: "fe68c9a095700362jif9hh2342gsd23",
+      server: "http://localhost:3099"
+    };
+  </script>
+  <script src="http://localhost:3099/widget.js" async></script>
 
 </body>
 </html>
