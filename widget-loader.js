@@ -24,17 +24,20 @@
  */
 (function () {
   var cfg = window.PromoSettings || {};
-  var server = (cfg.server || 'https://promotion-engine-nnsk.onrender.com').replace(/\/$/, '');
 
   if (!cfg.apiKey) {
     console.warn('[PromoLoader] window.PromoSettings.apiKey is required — widget disabled.');
     return;
   }
 
-  // Allow overriding the engine URL (e.g. for A/B testing or versioned deploys).
-  // Defaults to widget.js on the same server as the loader.
-  // A version/timestamp query param busts the browser cache on each loader update.
-  var engineSrc = cfg.engineSrc || (server + '/widget.js?v=' + (cfg.v || '1'));
+  // scriptBase  — where to load widget.js from (defaults to same origin as this loader file)
+  // server      — where API calls go (config, promotions, signals) — can be a different host
+  var loaderSrc  = (document.currentScript || {}).src || '';
+  var loaderBase = loaderSrc ? loaderSrc.replace(/\/widget-loader\.js.*$/, '') : '';
+  var scriptBase = (cfg.scriptBase || loaderBase || 'https://promotion-engine-nnsk.onrender.com').replace(/\/$/, '');
+
+  // Allow overriding the full engine URL (e.g. for A/B testing or versioned deploys).
+  var engineSrc = cfg.engineSrc || (scriptBase + '/widget.js?v=' + (cfg.v || '1'));
 
   // Avoid double-loading if the snippet fires twice
   if (window.__pe_loader_fired) return;

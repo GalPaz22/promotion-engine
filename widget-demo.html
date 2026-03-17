@@ -42,12 +42,15 @@
   <script>
     window.PromoSettings = {
       apiKey:  "fe68c9a095700362jif9hh2342gsd23",
-      server:  "https://promotion-engine-nnsk.onrender.com"
-      // engineSrc: optional — override the widget engine URL
+      // API calls (config, promotions, signals) → production
+      server:  "https://promotion-engine-nnsk.onrender.com",
+      // JS files (loader + widget.js) → local dev server
+      // scriptBase is inferred from the loader src below, so no need to set it explicitly
     };
     (function (d, s) {
       var e = d.createElement(s); e.async = true;
-      e.src = (window.PromoSettings.server || "https://promotion-engine-nnsk.onrender.com") + "/widget-loader.js";
+      // Load the loader itself from local — it will load widget.js from the same origin
+      e.src = "http://localhost:3099/widget-loader.js";
       d.head.appendChild(e);
     })(document, "script");
   </script>
