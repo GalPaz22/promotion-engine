@@ -180,41 +180,46 @@
       --pe-accent: #e8e8e8;
       --pe-sale:   #ff3b30;
       --pe-ease:   cubic-bezier(0.25,0.46,0.45,0.94);
-      --pe-drawer-w: 440px;
-      --pe-panel-w:  420px;
-      --pe-border-r: 18px;
+      --pe-drawer-w: 500px;
+      --pe-panel-w:  440px;
+      --pe-border-r: 20px;
     }
 
-    /* ── Shimmer border keyframe ── */
-    @keyframes pe-border-spin {
-      from { --pe-angle: 0deg; }
-      to   { --pe-angle: 360deg; }
-    }
+    /* ── Shimmer border ── */
     @property --pe-angle {
       syntax: '<angle>';
       inherits: false;
       initial-value: 0deg;
     }
+    @keyframes pe-border-spin {
+      from { --pe-angle: 0deg; }
+      to   { --pe-angle: 360deg; }
+    }
 
-    /* ── Card wrapper — holds the spinning border ── */
+    /* ── Card wrapper — the spinning gradient border lives here ── */
     #pe-card-wrap {
       position: fixed;
       bottom: calc(28px + env(safe-area-inset-bottom, 0px));
       left: 24px;
       width: var(--pe-drawer-w);
-      border-radius: calc(var(--pe-border-r) + 2px);
+      border-radius: calc(var(--pe-border-r) + 3px);
       z-index: 2147483640;
-      padding: 2px;                       /* border thickness */
-      background: conic-gradient(
-        from var(--pe-angle),
-        transparent 0deg,
-        transparent 60deg,
-        rgba(255,255,255,0.9) 120deg,     /* bright comet head */
-        rgba(255,255,255,0.15) 160deg,    /* fading tail */
-        transparent 210deg,
-        transparent 360deg
-      );
-      animation: pe-border-spin 3.2s linear infinite paused;
+      padding: 3px;                        /* border thickness */
+      /* Base layer: subtle static glow so border is visible even when slow */
+      background:
+        conic-gradient(
+          from var(--pe-angle),
+          rgba(255,255,255,0.06) 0deg,
+          rgba(255,255,255,0.06) 40deg,
+          rgba(255,255,255,1)    90deg,    /* sharp comet head */
+          rgba(255,255,255,0.55) 120deg,   /* bright tail */
+          rgba(255,255,255,0.12) 165deg,   /* dim tail */
+          rgba(255,255,255,0.06) 210deg,
+          rgba(255,255,255,0.06) 360deg
+        );
+      /* Soft outer glow that follows the comet */
+      filter: drop-shadow(0 0 6px rgba(255,255,255,0.35));
+      animation: pe-border-spin 2.6s linear infinite paused;
       transform: translateY(calc(100% + 80px));
       visibility: hidden;
       transition: transform 0.55s var(--pe-ease), visibility 0s 0.55s;
@@ -234,8 +239,8 @@
       overflow: hidden;
       background: var(--pe-card);
       box-shadow:
-        0 24px 60px rgba(0,0,0,0.85),
-        0 0 40px rgba(255,59,48,0.04);
+        0 28px 70px rgba(0,0,0,0.9),
+        0 0 50px rgba(255,59,48,0.05);
       font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
       display: flex;
       flex-direction: column;
@@ -251,7 +256,7 @@
     /* image column */
     .pe-img-wrap {
       position: relative;
-      width: 130px;
+      width: 155px;
       flex-shrink: 0;
       overflow: hidden;
       background: #0a0a0a;
@@ -264,9 +269,9 @@
     }
     #pe-card-wrap:hover .pe-img { transform: scale(1.06); }
     .pe-img-ph {
-      width: 100%; min-height: 90px; height: 100%;
+      width: 100%; min-height: 115px; height: 100%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 32px;
+      font-size: 40px;
       background: linear-gradient(160deg, #1a1a1a, #0a0a0a);
     }
     .pe-img-fade {
@@ -315,40 +320,40 @@
     .pe-body {
       flex: 1;
       min-width: 0;
-      padding: 14px 14px 14px 12px;
+      padding: 18px 18px 18px 14px;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      gap: 4px;
+      gap: 6px;
     }
     .pe-cat {
-      font-size: 8.5px;
+      font-size: 9px;
       font-weight: 500;
-      letter-spacing: 1.6px;
+      letter-spacing: 1.8px;
       text-transform: uppercase;
       color: var(--pe-muted);
     }
     .pe-name {
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 600;
-      line-height: 1.3;
+      line-height: 1.35;
       color: var(--pe-white);
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-    .pe-price-row { display: flex; flex-direction: column; gap: 1px; margin-top: 2px; }
-    .pe-price-main { display: flex; align-items: baseline; gap: 6px; }
+    .pe-price-row { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+    .pe-price-main { display: flex; align-items: baseline; gap: 8px; }
     .pe-price {
-      font-size: 15px;
+      font-size: 19px;
       font-weight: 700;
       color: var(--pe-white);
       letter-spacing: -0.5px;
     }
-    .pe-promo-tag { font-size: 9.5px; color: var(--pe-sale); font-weight: 600; }
+    .pe-promo-tag { font-size: 10.5px; color: var(--pe-sale); font-weight: 600; }
     .pe-orig-price {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 400;
       color: rgba(255,255,255,0.45);
       text-decoration: line-through;
@@ -365,14 +370,14 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 14px;
+      padding: 13px 18px;
       cursor: pointer;
       transition: background 0.2s;
     }
     .pe-cta:hover  { background: rgba(255,255,255,0.03); }
     .pe-cta:active { background: rgba(255,255,255,0.06); }
     .pe-cta-text {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
       color: var(--pe-accent);
       direction: rtl;
@@ -380,7 +385,7 @@
       line-height: 1.4;
     }
     .pe-cta-arrow {
-      font-size: 14px;
+      font-size: 16px;
       color: var(--pe-muted);
       transition: transform 0.2s, color 0.2s;
       flex-shrink: 0;
@@ -514,17 +519,17 @@
     @media (max-width: 768px) {
       :root { --pe-drawer-w: calc(100vw - 32px); --pe-panel-w: 100vw; }
       #pe-card-wrap { left: 16px; right: 16px; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width: auto; }
-      .pe-img-wrap { width: 88px; }
+      .pe-img-wrap { width: 110px; }
       #pe-panel { border-right: none; }
     }
     @media (max-width: 480px) {
       #pe-card-wrap { left: 12px; right: 12px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
-      .pe-img-wrap { width: 76px; }
-      .pe-name  { font-size: 11px; }
-      .pe-price { font-size: 13px; }
-      .pe-body  { padding: 10px 10px 10px 8px; }
-      .pe-cta   { padding: 9px 12px; }
-      .pe-cta-text { font-size: 10px; }
+      .pe-img-wrap { width: 90px; }
+      .pe-name  { font-size: 12px; }
+      .pe-price { font-size: 15px; }
+      .pe-body  { padding: 12px 12px 12px 10px; }
+      .pe-cta   { padding: 11px 14px; }
+      .pe-cta-text { font-size: 11px; }
     }
   `;
 
