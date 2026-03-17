@@ -171,14 +171,15 @@
   // ─── CSS ──────────────────────────────────────────────────────────────────
   const CSS = `
     :root {
-      --pe-black:  #000000;
-      --pe-card:   #141414;
-      --pe-panel:  #0f0f0f;
-      --pe-line:   rgba(255,255,255,0.07);
-      --pe-white:  #ffffff;
-      --pe-muted:  rgba(255,255,255,0.38);
-      --pe-accent: #e8e8e8;
-      --pe-sale:   #ff3b30;
+      --pe-black:  #0e0c0a;
+      --pe-card:   #1e1a15;           /* dark warm charcoal, not pure black */
+      --pe-panel:  #18150f;
+      --pe-line:   rgba(255,240,210,0.08);
+      --pe-white:  #f5efe4;           /* warm cream instead of cold white */
+      --pe-muted:  rgba(245,239,228,0.42);
+      --pe-accent: #e8dcc8;           /* warm off-white */
+      --pe-sale:   #e8472e;
+      --pe-gold:   #c9a96e;           /* warm gold accent */
       --pe-ease:   cubic-bezier(0.25,0.46,0.45,0.94);
       --pe-drawer-w: 380px;
       --pe-panel-w:  400px;
@@ -209,16 +210,16 @@
       background:
         conic-gradient(
           from var(--pe-angle),
-          rgba(255,255,255,0.06) 0deg,
-          rgba(255,255,255,0.06) 40deg,
-          rgba(255,255,255,1)    90deg,    /* sharp comet head */
-          rgba(255,255,255,0.55) 120deg,   /* bright tail */
-          rgba(255,255,255,0.12) 165deg,   /* dim tail */
-          rgba(255,255,255,0.06) 210deg,
-          rgba(255,255,255,0.06) 360deg
+          rgba(180,140,80,0.10) 0deg,
+          rgba(180,140,80,0.10) 40deg,
+          rgba(255,220,140,1)   90deg,    /* warm gold comet head */
+          rgba(220,180,110,0.7) 120deg,   /* gold tail */
+          rgba(200,160,90,0.18) 165deg,   /* dim tail */
+          rgba(180,140,80,0.10) 210deg,
+          rgba(180,140,80,0.10) 360deg
         );
-      /* Soft outer glow that follows the comet */
-      filter: drop-shadow(0 0 6px rgba(255,255,255,0.35));
+      /* Warm gold outer glow */
+      filter: drop-shadow(0 0 7px rgba(210,165,80,0.45));
       animation: pe-border-spin 2.6s linear infinite paused;
       transform: translateY(calc(100% + 80px));
       visibility: hidden;
@@ -239,8 +240,8 @@
       overflow: hidden;
       background: var(--pe-card);
       box-shadow:
-        0 28px 70px rgba(0,0,0,0.9),
-        0 0 50px rgba(255,59,48,0.05);
+        0 24px 60px rgba(0,0,0,0.75),
+        0 0 40px rgba(180,130,60,0.08);  /* subtle warm glow */
       font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
       display: flex;
       flex-direction: column;
@@ -272,7 +273,7 @@
       width: 100%; min-height: 90px; height: 100%;
       display: flex; align-items: center; justify-content: center;
       font-size: 32px;
-      background: linear-gradient(160deg, #1a1a1a, #0a0a0a);
+      background: linear-gradient(160deg, #2a2218, #161008);
     }
     .pe-img-fade {
       position: absolute;
@@ -328,10 +329,10 @@
     }
     .pe-cat {
       font-size: 8.5px;
-      font-weight: 500;
+      font-weight: 600;
       letter-spacing: 1.6px;
       text-transform: uppercase;
-      color: var(--pe-muted);
+      color: var(--pe-gold);
     }
     .pe-name {
       font-size: 12px;
@@ -411,7 +412,7 @@
       top: 0; left: 0; bottom: 0;
       width: var(--pe-panel-w);
       background: var(--pe-panel);
-      border-right: 1px solid rgba(255,255,255,0.07);
+      border-right: 1px solid rgba(200,160,90,0.12);
       display: flex;
       flex-direction: column;
       transform: translateX(-100%);
