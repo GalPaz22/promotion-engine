@@ -180,36 +180,65 @@
       --pe-accent: #e8e8e8;
       --pe-sale:   #ff3b30;
       --pe-ease:   cubic-bezier(0.25,0.46,0.45,0.94);
-      --pe-drawer-w: 380px;
-      --pe-panel-w:  400px;
+      --pe-drawer-w: 440px;
+      --pe-panel-w:  420px;
+      --pe-border-r: 18px;
     }
 
-    /* ── Card ── */
-    #pe-card {
+    /* ── Shimmer border keyframe ── */
+    @keyframes pe-border-spin {
+      from { --pe-angle: 0deg; }
+      to   { --pe-angle: 360deg; }
+    }
+    @property --pe-angle {
+      syntax: '<angle>';
+      inherits: false;
+      initial-value: 0deg;
+    }
+
+    /* ── Card wrapper — holds the spinning border ── */
+    #pe-card-wrap {
       position: fixed;
       bottom: calc(28px + env(safe-area-inset-bottom, 0px));
       left: 24px;
       width: var(--pe-drawer-w);
-      border-radius: 16px;
-      overflow: hidden;
-      background: var(--pe-card);
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,0.08),
-        0 24px 60px rgba(0,0,0,0.85),
-        0 0 40px rgba(255,59,48,0.05);
-      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+      border-radius: calc(var(--pe-border-r) + 2px);
       z-index: 2147483640;
-      display: flex;
-      flex-direction: column;
-      transform: translateY(calc(100% + 60px));
+      padding: 2px;                       /* border thickness */
+      background: conic-gradient(
+        from var(--pe-angle),
+        transparent 0deg,
+        transparent 60deg,
+        rgba(255,255,255,0.9) 120deg,     /* bright comet head */
+        rgba(255,255,255,0.15) 160deg,    /* fading tail */
+        transparent 210deg,
+        transparent 360deg
+      );
+      animation: pe-border-spin 3.2s linear infinite paused;
+      transform: translateY(calc(100% + 80px));
       visibility: hidden;
       transition: transform 0.55s var(--pe-ease), visibility 0s 0.55s;
       will-change: transform;
     }
-    #pe-card.pe-open {
+    #pe-card-wrap.pe-open {
       transform: translateY(0);
       visibility: visible;
       transition: transform 0.55s var(--pe-ease), visibility 0s 0s;
+      animation-play-state: running;
+    }
+
+    /* ── Card ── */
+    #pe-card {
+      width: 100%;
+      border-radius: var(--pe-border-r);
+      overflow: hidden;
+      background: var(--pe-card);
+      box-shadow:
+        0 24px 60px rgba(0,0,0,0.85),
+        0 0 40px rgba(255,59,48,0.04);
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+      display: flex;
+      flex-direction: column;
     }
 
     .pe-card-main {
@@ -222,7 +251,7 @@
     /* image column */
     .pe-img-wrap {
       position: relative;
-      width: 100px;
+      width: 130px;
       flex-shrink: 0;
       overflow: hidden;
       background: #0a0a0a;
@@ -233,7 +262,7 @@
       display: block;
       transition: transform 6s ease;
     }
-    #pe-card:hover .pe-img { transform: scale(1.06); }
+    #pe-card-wrap:hover .pe-img { transform: scale(1.06); }
     .pe-img-ph {
       width: 100%; min-height: 90px; height: 100%;
       display: flex; align-items: center; justify-content: center;
@@ -484,12 +513,12 @@
     /* ── Responsive ── */
     @media (max-width: 768px) {
       :root { --pe-drawer-w: calc(100vw - 32px); --pe-panel-w: 100vw; }
-      #pe-card { left: 16px; right: 16px; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width: auto; }
+      #pe-card-wrap { left: 16px; right: 16px; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); width: auto; }
       .pe-img-wrap { width: 88px; }
       #pe-panel { border-right: none; }
     }
     @media (max-width: 480px) {
-      #pe-card { left: 12px; right: 12px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+      #pe-card-wrap { left: 12px; right: 12px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
       .pe-img-wrap { width: 76px; }
       .pe-name  { font-size: 11px; }
       .pe-price { font-size: 13px; }
@@ -502,7 +531,8 @@
   // ─── HTML ─────────────────────────────────────────────────────────────────
   const HTML = `
     <!-- product card -->
-    <div id="pe-card">
+    <div id="pe-card-wrap">
+      <div id="pe-card">
       <button class="pe-close" id="pe-close-btn">✕</button>
       <div class="pe-card-main">
         <div class="pe-img-wrap">
@@ -527,6 +557,7 @@
       <div class="pe-cta" id="pe-cta">
         <span class="pe-cta-arrow">›</span>
         <span class="pe-cta-text">${t.cta}</span>
+      </div>
       </div>
     </div>
 
@@ -776,13 +807,13 @@
       origEl.style.display = 'none';
     }
 
-    document.getElementById('pe-card').classList.add('pe-open');
+    document.getElementById('pe-card-wrap').classList.add('pe-open');
     trackEvent('view', product);
   }
 
   function dismiss() {
     log.info('Card dismissed for this session');
-    document.getElementById('pe-card').classList.remove('pe-open');
+    document.getElementById('pe-card-wrap').classList.remove('pe-open');
     sessionStorage.setItem('pe_dismissed', '1');
   }
 
