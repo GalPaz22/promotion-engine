@@ -252,12 +252,14 @@
       flex-direction: row;
       align-items: stretch;
       position: relative;
+      height: 96px;        /* fixed height — images never stretch the card */
     }
 
     /* image column */
     .pe-img-wrap {
       position: relative;
       width: 100px;
+      height: 100%;        /* fills the fixed-height row */
       flex-shrink: 0;
       overflow: hidden;
       background: #0a0a0a;
@@ -265,12 +267,13 @@
     .pe-img {
       width: 100%; height: 100%;
       object-fit: cover;
+      object-position: center;
       display: block;
       transition: transform 6s ease;
     }
     #pe-card-wrap:hover .pe-img { transform: scale(1.06); }
     .pe-img-ph {
-      width: 100%; min-height: 90px; height: 100%;
+      width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
       font-size: 32px;
       background: linear-gradient(160deg, #2a2218, #161008);
