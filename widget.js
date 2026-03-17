@@ -266,8 +266,10 @@
     }
     .pe-img {
       width: 100%; height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       object-position: center;
+      padding: 6px;
+      box-sizing: border-box;
       display: block;
       transition: transform 6s ease;
     }
