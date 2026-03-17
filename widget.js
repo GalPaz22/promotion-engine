@@ -171,15 +171,14 @@
   // ─── CSS ──────────────────────────────────────────────────────────────────
   const CSS = `
     :root {
-      --pe-black:  #0e0c0a;
-      --pe-card:   #1e1a15;           /* dark warm charcoal, not pure black */
-      --pe-panel:  #18150f;
-      --pe-line:   rgba(255,240,210,0.08);
-      --pe-white:  #f5efe4;           /* warm cream instead of cold white */
-      --pe-muted:  rgba(245,239,228,0.42);
-      --pe-accent: #e8dcc8;           /* warm off-white */
-      --pe-sale:   #e8472e;
-      --pe-gold:   #c9a96e;           /* warm gold accent */
+      --pe-card:   rgba(255, 252, 247, 0.82);   /* frosted warm white */
+      --pe-panel:  rgba(252, 248, 242, 0.96);
+      --pe-line:   rgba(160, 120, 60, 0.12);
+      --pe-ink:    #1c1510;                      /* dark text */
+      --pe-muted:  rgba(28, 21, 16, 0.42);
+      --pe-accent: #3d2e1e;
+      --pe-sale:   #d63b24;
+      --pe-gold:   #a07832;
       --pe-ease:   cubic-bezier(0.25,0.46,0.45,0.94);
       --pe-drawer-w: 380px;
       --pe-panel-w:  400px;
@@ -239,9 +238,12 @@
       border-radius: var(--pe-border-r);
       overflow: hidden;
       background: var(--pe-card);
+      backdrop-filter: blur(24px) saturate(1.6);
+      -webkit-backdrop-filter: blur(24px) saturate(1.6);
       box-shadow:
-        0 24px 60px rgba(0,0,0,0.75),
-        0 0 40px rgba(180,130,60,0.08);  /* subtle warm glow */
+        0 8px 32px rgba(80, 50, 20, 0.18),
+        0 2px 8px  rgba(80, 50, 20, 0.10),
+        inset 0 1px 0 rgba(255,255,255,0.7);   /* top highlight */
       font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
       display: flex;
       flex-direction: column;
@@ -262,7 +264,7 @@
       height: 100%;        /* fills the fixed-height row */
       flex-shrink: 0;
       overflow: hidden;
-      background: #0a0a0a;
+      background: rgba(245, 238, 225, 0.6);
     }
     .pe-img {
       width: 100%; height: 100%;
@@ -278,13 +280,13 @@
       width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
       font-size: 32px;
-      background: linear-gradient(160deg, #2a2218, #161008);
+      background: rgba(230, 218, 198, 0.5);
     }
     .pe-img-fade {
       position: absolute;
       top: 0; right: 0; bottom: 0;
-      width: 40px;
-      background: linear-gradient(to right, transparent, var(--pe-card));
+      width: 36px;
+      background: linear-gradient(to right, transparent, rgba(255,252,247,0.82));
       pointer-events: none;
     }
     .pe-sale-pill {
@@ -307,11 +309,11 @@
       top: 8px; right: 8px;
       width: 22px; height: 22px;
       border-radius: 50%;
-      background: rgba(0,0,0,0.55);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.12);
-      color: rgba(255,255,255,0.6);
-      font-size: 12px;
+      background: rgba(28, 21, 16, 0.12);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(28,21,16,0.12);
+      color: rgba(28, 21, 16, 0.55);
+      font-size: 11px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
       z-index: 2;
@@ -320,7 +322,7 @@
       font-family: inherit;
       padding: 0;
     }
-    .pe-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .pe-close:hover { background: rgba(28,21,16,0.2); color: var(--pe-ink); }
 
     /* content column */
     .pe-body {
@@ -343,7 +345,7 @@
       font-size: 12px;
       font-weight: 600;
       line-height: 1.3;
-      color: var(--pe-white);
+      color: var(--pe-ink);
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -354,20 +356,20 @@
     .pe-price {
       font-size: 15px;
       font-weight: 700;
-      color: var(--pe-white);
+      color: var(--pe-ink);
       letter-spacing: -0.5px;
     }
     .pe-promo-tag { font-size: 9.5px; color: var(--pe-sale); font-weight: 600; }
     .pe-orig-price {
       font-size: 10px;
       font-weight: 400;
-      color: rgba(255,255,255,0.45);
+      color: rgba(28,21,16,0.38);
       text-decoration: line-through;
     }
     .pe-orig-price::before {
       content: 'היה ';
       text-decoration: none;
-      color: rgba(255,255,255,0.28);
+      color: rgba(28,21,16,0.28);
     }
 
     /* CTA strip */
@@ -380,8 +382,8 @@
       cursor: pointer;
       transition: background 0.2s;
     }
-    .pe-cta:hover  { background: rgba(255,255,255,0.03); }
-    .pe-cta:active { background: rgba(255,255,255,0.06); }
+    .pe-cta:hover  { background: rgba(28,21,16,0.04); }
+    .pe-cta:active { background: rgba(28,21,16,0.08); }
     .pe-cta-text {
       font-size: 11px;
       font-weight: 500;
@@ -396,15 +398,15 @@
       transition: transform 0.2s, color 0.2s;
       flex-shrink: 0;
     }
-    .pe-cta:hover .pe-cta-arrow { transform: translateX(3px); color: var(--pe-white); }
+    .pe-cta:hover .pe-cta-arrow { transform: translateX(3px); color: var(--pe-ink); }
 
     /* ── Side panel overlay ── */
     #pe-overlay {
       position: fixed;
       inset: 0;
       z-index: 2147483641;
-      background: rgba(0,0,0,0.45);
-      backdrop-filter: blur(6px);
+      background: rgba(20,12,5,0.35);
+      backdrop-filter: blur(8px);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.3s ease;
@@ -417,7 +419,9 @@
       top: 0; left: 0; bottom: 0;
       width: var(--pe-panel-w);
       background: var(--pe-panel);
-      border-right: 1px solid rgba(200,160,90,0.12);
+      backdrop-filter: blur(28px) saturate(1.5);
+      -webkit-backdrop-filter: blur(28px) saturate(1.5);
+      border-right: 1px solid rgba(160,120,60,0.15);
       display: flex;
       flex-direction: column;
       transform: translateX(-100%);
@@ -435,22 +439,22 @@
       flex-shrink: 0;
     }
     .pe-panel-header-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .pe-panel-title { font-size: 14px; font-weight: 600; color: var(--pe-white); }
+    .pe-panel-title { font-size: 14px; font-weight: 600; color: var(--pe-ink); }
     .pe-panel-count {
       font-size: 11px; color: var(--pe-muted);
-      background: rgba(255,255,255,0.06);
+      background: rgba(28,21,16,0.06);
       border: 1px solid var(--pe-line);
       border-radius: 20px; padding: 2px 9px;
     }
     .pe-panel-pers {
       font-size: 10px; color: var(--pe-sale);
-      background: rgba(255,59,48,0.08);
-      border: 1px solid rgba(255,59,48,0.2);
+      background: rgba(214,59,36,0.08);
+      border: 1px solid rgba(214,59,36,0.2);
       border-radius: 20px; padding: 2px 9px; font-weight: 500;
     }
     .pe-panel-close {
       width: 28px; height: 28px; border-radius: 50%;
-      background: rgba(255,255,255,0.06);
+      background: rgba(28,21,16,0.06);
       border: 1px solid var(--pe-line);
       color: var(--pe-muted);
       font-size: 14px;
