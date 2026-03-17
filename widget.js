@@ -231,6 +231,45 @@
       transition: transform 0.55s var(--pe-ease), visibility 0s 0s;
       animation-play-state: running;
     }
+    /* Minimised: slide left until only the tab strip is visible */
+    #pe-card-wrap.pe-minimized {
+      transform: translateX(calc(-100% + 44px));
+      visibility: visible;
+      transition: transform 0.5s var(--pe-ease), visibility 0s 0s;
+      animation-play-state: paused;
+      cursor: pointer;
+    }
+    #pe-card-wrap.pe-minimized:hover {
+      transform: translateX(calc(-100% + 52px));
+    }
+
+    /* ── Restore tab — the strip that sticks out when minimised ── */
+    #pe-tab {
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 44px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      pointer-events: none;   /* card-wrap handles the click */
+      z-index: 1;
+    }
+    #pe-tab-icon {
+      font-size: 18px;
+      line-height: 1;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.15));
+    }
+    #pe-tab-label {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--pe-gold);
+    }
 
     /* ── Card ── */
     #pe-card {
@@ -547,6 +586,11 @@
   const HTML = `
     <!-- product card -->
     <div id="pe-card-wrap">
+      <!-- restore tab — visible only when card is minimised -->
+      <div id="pe-tab">
+        <span id="pe-tab-icon">🏷️</span>
+        <span id="pe-tab-label">מבצע</span>
+      </div>
       <div id="pe-card">
       <button class="pe-close" id="pe-close-btn">✕</button>
       <div class="pe-card-main">
@@ -771,7 +815,15 @@
     document.body.appendChild(wrap);
 
     // wire events
-    document.getElementById('pe-close-btn').addEventListener('click', dismiss);
+    document.getElementById('pe-close-btn').addEventListener('click', function(e) {
+      e.stopPropagation(); // don't bubble to card-wrap restore handler
+      dismiss();
+    });
+    document.getElementById('pe-card-wrap').addEventListener('click', function(e) {
+      // Only restore when clicking on the minimised tab strip (right 44px)
+      const wrap = this;
+      if (wrap.classList.contains('pe-minimized')) restore();
+    });
     document.getElementById('pe-cta').addEventListener('click', openPanel);
     document.getElementById('pe-panel-close').addEventListener('click', closePanel);
     document.getElementById('pe-overlay').addEventListener('click', function (e) {
@@ -787,10 +839,6 @@
   // ─── API ──────────────────────────────────────────────────────────────────
   function showCard(product) {
     if (!product) return;
-    if (sessionStorage.getItem('pe_dismissed')) {
-      log.info('Card suppressed — dismissed this session');
-      return;
-    }
     log.info('Showing card »', product.name, '| price:', product.displayPrice ?? product.price);
 
     const img  = document.getElementById('pe-img');
@@ -827,9 +875,17 @@
   }
 
   function dismiss() {
-    log.info('Card dismissed for this session');
-    document.getElementById('pe-card-wrap').classList.remove('pe-open');
-    sessionStorage.setItem('pe_dismissed', '1');
+    log.info('Card minimised');
+    const wrap = document.getElementById('pe-card-wrap');
+    wrap.classList.remove('pe-open');
+    wrap.classList.add('pe-minimized');
+  }
+
+  function restore() {
+    log.info('Card restored');
+    const wrap = document.getElementById('pe-card-wrap');
+    wrap.classList.remove('pe-minimized');
+    wrap.classList.add('pe-open');
   }
 
   function openPanel() {
