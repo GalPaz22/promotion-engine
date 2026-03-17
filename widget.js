@@ -252,7 +252,7 @@
       flex-direction: row;
       align-items: stretch;
       position: relative;
-      height: 96px;        /* fixed height — images never stretch the card */
+      height: 116px;       /* fixed height — images never stretch the card */
     }
 
     /* image column */
