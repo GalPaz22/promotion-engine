@@ -697,20 +697,18 @@
       client_ts:    new Date().toISOString(),       // exact client-side action time
     };
     log.info(`Event: ${type.toUpperCase()} »`, product.name || payload.product_id);
-    // fire-and-forget; use sendBeacon if available so it survives navigation
+    // fire-and-forget; keepalive:true survives page navigation (same guarantee as
+    // sendBeacon) AND supports custom headers — sendBeacon cannot send x-api-key
+    // so it would always get a 401 from requireApiKey middleware.
     const url  = `${cfg.server}/pe/signal`;
     const body = JSON.stringify(payload);
     try {
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
-      } else {
-        fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
-          body,
-          keepalive: true,
-        }).catch(() => {});
-      }
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+        body,
+        keepalive: true,
+      }).catch(() => {});
     } catch {}
   }
 
