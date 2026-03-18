@@ -72,25 +72,34 @@ async function getSessionProfile(dbName, sessionId) {
 }
 
 /**
+ * Signal weights — shared by both soft and hard category scoring.
+ *  purchases : strongest (user actually bought)
+ *  carts     : very strong (added to cart, high intent)
+ *  clicks    : weak (browsed)
+ *  searches  : meaningful — user explicitly looked for this category
+ */
+const WEIGHTS = { purchases: 8, carts: 15, clicks: 1, searches: 3 };
+
+/**
  * Build an ordered map of soft-category affinities from the profile.
- * Affinity = purchases×5 + carts×3 + clicks×1 + searches×0.5
  * Returns: { [categoryName]: affinityScore }
  */
 function buildAffinityMap(profile) {
   const affinityMap = {};
   const softCats = profile?.preferences?.softCategories || {};
   for (const [cat, stats] of Object.entries(softCats)) {
-    affinityMap[cat] =
-      (stats.purchases || 0) * 8 +
-      (stats.carts    || 0) * 15 + // strong intent signal — user actively added to cart
-      (stats.clicks   || 0) * 1 +
-      (stats.searches || 0) * 0.5;
+    const score =
+      (stats.purchases || 0) * WEIGHTS.purchases +
+      (stats.carts     || 0) * WEIGHTS.carts +
+      (stats.clicks    || 0) * WEIGHTS.clicks +
+      (stats.searches  || 0) * WEIGHTS.searches;
+    if (score > 0) affinityMap[cat] = score;
   }
   return affinityMap;
 }
 
 /**
- * Build an affinity map from hardCategories (same scoring formula as soft).
+ * Build an affinity map from hardCategories (top-level on profile doc).
  * Returns: { [categoryName]: affinityScore }
  */
 function buildHardCategoryMap(profile) {
@@ -98,11 +107,12 @@ function buildHardCategoryMap(profile) {
   const hardCats = profile?.hardCategories || {};
   for (const [cat, stats] of Object.entries(hardCats)) {
     if (typeof stats !== 'object' || !stats) continue;
-    map[cat] =
-      (stats.purchases || 0) * 8 +
-      (stats.carts    || 0) * 15 +
-      (stats.clicks   || 0) * 1 +
-      (stats.searches || 0) * 0.5;
+    const score =
+      (stats.purchases || 0) * WEIGHTS.purchases +
+      (stats.carts     || 0) * WEIGHTS.carts +
+      (stats.clicks    || 0) * WEIGHTS.clicks +
+      (stats.searches  || 0) * WEIGHTS.searches;
+    if (score > 0) map[cat] = score;
   }
   return map;
 }
@@ -443,14 +453,17 @@ app.post('/promotions/discover', requireApiKey, async (req, res) => {
     // Log what the engine sees for this session
     const softCatCount = Object.keys(affinityMap).length;
     const hardCatCount = Object.keys(hardCategoryMap).length;
+    const hasSignals   = softCatCount > 0 || hardCatCount > 0 || cartSets.ids.size > 0;
     if (profile) {
-      console.log(`[PROMO /discover] profile loaded | soft cats: ${softCatCount} | hard cats: ${hardCatCount} | cart items: ${cartSets.ids.size}`);
+      console.log(`[PROMO /discover] profile loaded | soft cats: ${softCatCount} | hard cats: ${hardCatCount} | cart items: ${cartSets.ids.size} | hasSignals: ${hasSignals}`);
       if (hardCatCount > 0) {
         const topHard = Object.entries(hardCategoryMap).sort((a,b) => b[1]-a[1]).slice(0,3);
         console.log(`[PROMO /discover] top hard categories:`, topHard.map(([c,s]) => `${c}=${s}`).join(', '));
       } else {
         console.log(`[PROMO /discover] no hard categories in profile yet`);
       }
+    } else {
+      console.log(`[PROMO /discover] anonymous session — no profile`);
     }
 
     // Top-5 categories by affinity (soft + hard combined, for response transparency)
@@ -548,6 +561,7 @@ app.post('/promotions/discover', requireApiKey, async (req, res) => {
     return res.json({
       session_id: session_id || null,
       personalized: !!profile,
+      hasSignals,
       profileSnapshot: {
         topCategories,
         softCategories: affinityMap,

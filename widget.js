@@ -985,6 +985,11 @@
         return;
       }
 
+      if (!data.hasSignals) {
+        log.info('No interaction signals for this session yet — card suppressed.');
+        return;
+      }
+
       log.group(`${_products.length} promotions received in ${Date.now() - t0}ms`);
       log.info('Personalized:', data.personalized ? 'yes' : 'no');
       log.info('Top product:', _products[0]?.name, '| display price:', _products[0]?.displayPrice);
