@@ -440,6 +440,19 @@ app.post('/promotions/discover', requireApiKey, async (req, res) => {
     const hardCategoryMap = buildHardCategoryMap(profile);
     const cartSets        = buildCartSets(profile);
 
+    // Log what the engine sees for this session
+    const softCatCount = Object.keys(affinityMap).length;
+    const hardCatCount = Object.keys(hardCategoryMap).length;
+    if (profile) {
+      console.log(`[PROMO /discover] profile loaded | soft cats: ${softCatCount} | hard cats: ${hardCatCount} | cart items: ${cartSets.ids.size}`);
+      if (hardCatCount > 0) {
+        const topHard = Object.entries(hardCategoryMap).sort((a,b) => b[1]-a[1]).slice(0,3);
+        console.log(`[PROMO /discover] top hard categories:`, topHard.map(([c,s]) => `${c}=${s}`).join(', '));
+      } else {
+        console.log(`[PROMO /discover] no hard categories in profile yet`);
+      }
+    }
+
     // Top-5 categories by affinity (soft + hard combined, for response transparency)
     const combinedAffinities = { ...affinityMap };
     for (const [cat, score] of Object.entries(hardCategoryMap)) {
@@ -535,7 +548,12 @@ app.post('/promotions/discover', requireApiKey, async (req, res) => {
     return res.json({
       session_id: session_id || null,
       personalized: !!profile,
-      profileSnapshot: { topCategories },
+      profileSnapshot: {
+        topCategories,
+        softCategories: affinityMap,
+        hardCategories: hardCategoryMap,
+        cartItemCount:  cartSets.ids.size,
+      },
       total: onSaleProducts.length,
       returned: results.length,
       products: results,

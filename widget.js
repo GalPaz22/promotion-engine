@@ -941,6 +941,14 @@
   }
 
   function renderAffinities(snapshot) {
+    if (snapshot) {
+      log.group('Profile snapshot');
+      log.info('Hard categories:', snapshot.hardCategories || {});
+      log.info('Soft categories:', snapshot.softCategories || {});
+      log.info('Cart items:', snapshot.cartItemCount || 0);
+      log.info('Top combined:', (snapshot.topCategories || []).map(c => `${c.category}=${c.affinity.toFixed(0)}`).join(', ') || '(none)');
+      log.end();
+    }
     const wrap = document.getElementById('pe-affinities');
     const cats = snapshot?.topCategories || [];
     if (!cats.length) { wrap.style.display = 'none'; return; }
