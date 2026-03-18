@@ -37,7 +37,7 @@
   var scriptBase = (cfg.scriptBase || loaderBase || 'https://promotion-engine-nnsk.onrender.com').replace(/\/$/, '');
 
   // Allow overriding the full engine URL (e.g. for A/B testing or versioned deploys).
-  var engineSrc = cfg.engineSrc || (scriptBase + '/widget.js?v=' + (cfg.v || '1'));
+  var engineSrc = cfg.engineSrc || (scriptBase + '/widget.js?v=' + (cfg.v || '2'));
 
   // Avoid double-loading if the snippet fires twice
   if (window.__pe_loader_fired) return;

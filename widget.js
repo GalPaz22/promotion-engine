@@ -86,7 +86,7 @@
 
   // Cache key is scoped to the API key so switching environments never
   // serves a stale localhost config to a production page.
-  const CFG_CACHE_KEY = 'pe_cfg_v1_' + API_KEY.slice(0, 12);
+  const CFG_CACHE_KEY = 'pe_cfg_v2_' + API_KEY.slice(0, 12);
   const CFG_CACHE_TTL = 5 * 60 * 1000; // 5 min
 
   function readCfgCache() {
@@ -105,7 +105,9 @@
 
   function applyCfg(data) {
     if (!data) return;
-    if (data.server)           cfg.server           = data.server.replace(/\/$/, '');
+    // cfg.server is set from window.PromoSettings.server at boot and never overridden —
+    // the server field in the config response is ignored to prevent a stale cache
+    // from pointing API calls at the wrong host (e.g. localhost in production).
     if (data.limit)            cfg.limit            = data.limit;
     if (data.lang)             cfg.lang             = data.lang;
     if (data.platform)         cfg.platform         = data.platform;
