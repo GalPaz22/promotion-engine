@@ -132,6 +132,46 @@ function buildCartSets(profile) {
 }
 
 /**
+ * Score recent events by exponential time-decay.
+ *
+ * Half-life = 15 minutes → a click 15 min ago is worth half a click right now.
+ * This means a single fresh click completely outweighs 100 old clicks.
+ *
+ * Type multipliers:
+ *   cart     × 5   (highest intent)
+ *   click    × 2
+ *   view     × 0.5 (passive)
+ *   purchase × 8
+ *
+ * Returns: { [hardCategory]: recencyScore }
+ */
+const RECENCY_HALF_LIFE_MIN = 15;
+const RECENCY_TYPE_WEIGHT   = { cart: 5, click: 2, view: 0.5, purchase: 8 };
+
+function buildRecencyMap(profile) {
+  const map  = {};
+  const events = profile?.recentEvents || [];
+  const now    = Date.now();
+
+  for (const ev of events) {
+    const ageMin = (now - new Date(ev.ts).getTime()) / 60000;
+    // Exponential decay: score = 100 * typeWeight * 0.5^(age/halfLife)
+    const decay  = Math.pow(0.5, ageMin / RECENCY_HALF_LIFE_MIN);
+    const weight = RECENCY_TYPE_WEIGHT[ev.type] || 1;
+    const pts    = 100 * weight * decay;
+
+    for (const cat of (ev.category || [])) {
+      map[cat] = (map[cat] || 0) + pts;
+    }
+    // Also credit soft categories so search signals surface
+    for (const sc of (ev.softCategory || [])) {
+      map[sc] = (map[sc] || 0) + pts * 0.5;
+    }
+  }
+  return map;
+}
+
+/**
  * Return the preferred price range for a given hard category (or global fallback).
  * Returns: { min, max, avg } or null
  */
@@ -162,7 +202,7 @@ function getPreferredPriceRange(profile, hardCategory) {
  * @param {Object} cartSets         — { ids: Set, names: Set } from cart items
  * @returns {number} total score (higher = more relevant)
  */
-function scoreProduct(product, profile, affinityMap, hardCategoryMap, cartSets) {
+function scoreProduct(product, profile, affinityMap, hardCategoryMap, cartSets, recencyMap) {
   let score = 0;
 
   // ── 1. Soft-category affinity ──────────────────────────────────────────────
@@ -226,7 +266,20 @@ function scoreProduct(product, profile, affinityMap, hardCategoryMap, cartSets) 
     }
   }
 
-  // ── 6. Catalog boost field ────────────────────────────────────────────────
+  // ── 6. Recency boost — recent interactions dominate over historical ──────
+  // A click 1 min ago scores ~100 pts; same click 15 min ago ~50 pts; 1hr ago ~6 pts.
+  // This ensures "just searched iPhone" immediately surfaces iPhone deals
+  // even if the user has 100 historical smart-watch signals.
+  if (recencyMap) {
+    for (const hc of productHardCats) {
+      score += (recencyMap[hc] || 0);
+    }
+    for (const sc of productSoftCats) {
+      score += (recencyMap[sc] || 0) * 0.5;
+    }
+  }
+
+  // ── 7. Catalog boost field ────────────────────────────────────────────────
   if (product.boost && product.boost > 0) {
     score += Math.min(product.boost * 2, 30);
   }
@@ -449,6 +502,7 @@ app.post('/promotions/discover', requireApiKey, async (req, res) => {
     const affinityMap     = buildAffinityMap(profile);
     const hardCategoryMap = buildHardCategoryMap(profile);
     const cartSets        = buildCartSets(profile);
+    const recencyMap      = buildRecencyMap(profile);
 
     // Log what the engine sees for this session
     const softCatCount = Object.keys(affinityMap).length;
@@ -499,7 +553,7 @@ app.post('/promotions/discover', requireApiKey, async (req, res) => {
 
     // ── 3. Score & rank ───────────────────────────────────────────────────────
     const scored = onSaleProducts.map((product) => {
-      const relevanceScore = scoreProduct(product, profile, affinityMap, hardCategoryMap, cartSets);
+      const relevanceScore = scoreProduct(product, profile, affinityMap, hardCategoryMap, cartSets, recencyMap);
       return { product, relevanceScore };
     });
 
@@ -566,6 +620,7 @@ app.post('/promotions/discover', requireApiKey, async (req, res) => {
         topCategories,
         softCategories: affinityMap,
         hardCategories: hardCategoryMap,
+        recency:        recencyMap,
         cartItemCount:  cartSets.ids.size,
       },
       total: onSaleProducts.length,
@@ -632,13 +687,26 @@ app.post('/pe/signal', requireApiKey, async (req, res) => {
       $setOnInsert: { session_id, created_at: now },
     };
 
+    // Always push a timestamped recent-event record (capped at last 20).
+    // This powers recency-weighted scoring so the last click dominates.
+    const recentEvent = {
+      type:         event_type,
+      category:     [].concat(category     || []).filter(Boolean),
+      softCategory: [].concat(softCategory || []).filter(Boolean),
+      productId:    product_id   || null,
+      productName:  product_name || null,
+      ts:           now,
+    };
+    updateOps.$push = {
+      ...(updateOps.$push || {}),
+      recentEvents: { $each: [recentEvent], $slice: -20 },
+    };
+
     // For cart events, also push to cartItems (cap at last 100)
     if (event_type === 'cart' && product_id) {
-      updateOps.$push = {
-        cartItems: {
-          $each:  [{ id: product_id, name: product_name || '', addedAt: now }],
-          $slice: -100,
-        },
+      updateOps.$push.cartItems = {
+        $each:  [{ id: product_id, name: product_name || '', addedAt: now }],
+        $slice: -100,
       };
     }
 
