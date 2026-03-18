@@ -502,12 +502,12 @@
       transition: background 0.15s, color 0.15s;
       font-family: inherit;
     }
-    .pe-panel-close:hover { background: rgba(255,255,255,0.12); color: var(--pe-white); }
+    .pe-panel-close:hover { background: rgba(28,21,16,0.12); color: var(--pe-ink); }
 
     .pe-panel-body { overflow-y: auto; padding: 18px 16px 28px; flex: 1; }
     .pe-panel-body::-webkit-scrollbar { width: 3px; }
     .pe-panel-body::-webkit-scrollbar-track { background: transparent; }
-    .pe-panel-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    .pe-panel-body::-webkit-scrollbar-thumb { background: rgba(28,21,16,0.15); border-radius: 2px; }
 
     .pe-affinities {
       display: flex; align-items: center;
@@ -515,29 +515,34 @@
     }
     .pe-aff-label { font-size: 10px; color: var(--pe-muted); letter-spacing: 0.8px; text-transform: uppercase; }
     .pe-aff-pill {
-      font-size: 10px; background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
+      font-size: 10px; background: rgba(28,21,16,0.06);
+      border: 1px solid var(--pe-line);
       border-radius: 20px; padding: 2px 9px; color: var(--pe-accent);
     }
 
     /* product list */
-    .pe-grid { display: flex; flex-direction: column; gap: 10px; }
+    .pe-grid { display: flex; flex-direction: column; gap: 8px; }
 
     .pe-item {
-      background: #181818;
-      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,252,245,0.7);
+      border: 1px solid rgba(160,120,60,0.12);
       border-radius: 12px; overflow: hidden;
       cursor: pointer; display: flex; flex-direction: row; align-items: stretch;
-      transition: background 0.18s, border-color 0.18s;
+      transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
       text-decoration: none;
+      box-shadow: 0 1px 4px rgba(80,50,20,0.07);
     }
-    .pe-item:hover { background: #1e1e1e; border-color: rgba(255,255,255,0.13); }
+    .pe-item:hover {
+      background: rgba(255,252,245,0.95);
+      border-color: rgba(160,120,60,0.22);
+      box-shadow: 0 3px 12px rgba(80,50,20,0.12);
+    }
 
     .pe-item-img-wrap {
       position: relative; width: 70px; flex-shrink: 0;
-      overflow: hidden; background: #0a0a0a;
+      overflow: hidden; background: rgba(230,218,198,0.5);
     }
-    .pe-item-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s var(--pe-ease); }
+    .pe-item-img { width: 100%; height: 100%; object-fit: contain; padding: 4px; box-sizing: border-box; display: block; transition: transform 0.4s var(--pe-ease); }
     .pe-item:hover .pe-item-img { transform: scale(1.06); }
     .pe-item-img-ph {
       width: 100%; min-height: 72px; height: 100%;
@@ -546,23 +551,23 @@
     .pe-item-dot {
       position: absolute; top: 6px; right: 6px;
       width: 6px; height: 6px; border-radius: 50%;
-      background: var(--pe-sale); box-shadow: 0 0 6px rgba(255,59,48,0.7);
+      background: var(--pe-sale); box-shadow: 0 0 6px rgba(214,59,36,0.55);
     }
 
     .pe-item-body {
       flex: 1; min-width: 0; padding: 10px 12px;
       display: flex; flex-direction: column; justify-content: center; gap: 2px;
     }
-    .pe-item-cat { font-size: 8px; font-weight: 500; letter-spacing: 1.4px; text-transform: uppercase; color: var(--pe-muted); }
+    .pe-item-cat { font-size: 8px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; color: var(--pe-gold); }
     .pe-item-name {
-      font-size: 12px; font-weight: 500; color: var(--pe-white); line-height: 1.3;
+      font-size: 12px; font-weight: 500; color: var(--pe-ink); line-height: 1.3;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
     .pe-item-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
-    .pe-item-price { font-size: 13px; font-weight: 700; color: var(--pe-white); }
-    .pe-item-orig  { font-size: 10px; font-weight: 400; color: rgba(255,255,255,0.4); text-decoration: line-through; margin-left: 5px; }
+    .pe-item-price { font-size: 13px; font-weight: 700; color: var(--pe-ink); }
+    .pe-item-orig  { font-size: 10px; font-weight: 400; color: rgba(28,21,16,0.38); text-decoration: line-through; margin-left: 5px; }
     .pe-item-link  { font-size: 12px; color: var(--pe-muted); text-decoration: none; transition: color 0.15s; }
-    .pe-item-link:hover { color: var(--pe-white); }
+    .pe-item-link:hover { color: var(--pe-ink); }
 
     /* ── Responsive ── */
     @media (max-width: 768px) {
