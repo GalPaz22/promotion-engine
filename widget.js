@@ -687,6 +687,19 @@
       return;
     }
 
+    // Deduplicate view events per product per tab-session.
+    // sessionStorage is cleared automatically on tab close so each new visit
+    // starts fresh — no stale view signals polluting the profile.
+    const productKey = String(product.id || product._id || '');
+    if (type === 'view' && productKey) {
+      const ssKey = 'pe_view_' + productKey;
+      if (sessionStorage.getItem(ssKey)) {
+        log.info(`View deduped (already seen this session) — product ${productKey}`);
+        return;
+      }
+      try { sessionStorage.setItem(ssKey, '1'); } catch {}
+    }
+
     const payload = {
       session_id:   ensureSessionId(),
       event_type:   type,                          // 'view' | 'click' | 'cart'
