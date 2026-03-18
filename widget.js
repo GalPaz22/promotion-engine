@@ -82,6 +82,9 @@
     productIdField:   'id',
     quantityField:    'quantity',
     atcSelector:      '',
+    // Tracking flags — controlled via site config from the API user block
+    trackClicks:      true,   // set to false in siteConfig.clickTracking.trackClicks to disable
+    trackCarts:       true,   // set to false in siteConfig.clickTracking.trackCarts  to disable
   };
 
   // Cache key is scoped to the API key so switching environments never
@@ -116,11 +119,15 @@
     if (data.productIdField)   cfg.productIdField   = data.productIdField;
     if (data.quantityField)    cfg.quantityField    = data.quantityField;
     if (data.atcSelector)      cfg.atcSelector      = data.atcSelector;
+    // Tracking flags: explicit boolean from site config (API user block)
+    if (data.trackClicks !== undefined) cfg.trackClicks = !!data.trackClicks;
+    if (data.trackCarts  !== undefined) cfg.trackCarts  = !!data.trackCarts;
 
     log.group('Config applied');
     log.info('platform:', cfg.platform, '| lang:', cfg.lang, '| limit:', cfg.limit);
     log.info('ATC patterns:', cfg.atcPatterns.length ? cfg.atcPatterns : '(platform defaults)');
     log.info('ATC selector:', cfg.atcSelector || '(none)');
+    log.info('Track clicks:', cfg.trackClicks, '| Track carts:', cfg.trackCarts);
     log.end();
   }
 
@@ -669,6 +676,17 @@
   // ─── Event tracking ───────────────────────────────────────────────────────
   function trackEvent(type, product) {
     if (!product) return;
+
+    // Respect site-config tracking flags (loaded from API user block via /widget/config)
+    if (type === 'click' && !cfg.trackClicks) {
+      log.info('Click tracking disabled by site config — skipped');
+      return;
+    }
+    if (type === 'cart' && !cfg.trackCarts) {
+      log.info('Cart tracking disabled by site config — skipped');
+      return;
+    }
+
     const payload = {
       session_id:   ensureSessionId(),
       event_type:   type,                          // 'view' | 'click' | 'cart'
@@ -676,6 +694,7 @@
       product_name: product.name || '',
       category:     product.category  || [],
       softCategory: product.softCategory || [],
+      client_ts:    new Date().toISOString(),       // exact client-side action time
     };
     log.info(`Event: ${type.toUpperCase()} »`, product.name || payload.product_id);
     // fire-and-forget; use sendBeacon if available so it survives navigation

@@ -153,12 +153,23 @@ function buildRecencyMap(profile) {
   const events = profile?.recentEvents || [];
   const now    = Date.now();
 
+  // Session-depth bonus: events fired late in the session signal stronger intent.
+  // An event at ≥20 min into the session gets 1.5× weight; scales linearly from 1.0×.
+  // This rewards "late dynamic activity" (true purchase intent) over early browsing.
+  const sessionStart = profile?.created_at ? new Date(profile.created_at).getTime() : now;
+
   for (const ev of events) {
     const ageMin = (now - new Date(ev.ts).getTime()) / 60000;
     // Exponential decay: score = 100 * typeWeight * 0.5^(age/halfLife)
     const decay  = Math.pow(0.5, ageMin / RECENCY_HALF_LIFE_MIN);
     const weight = RECENCY_TYPE_WEIGHT[ev.type] || 1;
-    const pts    = 100 * weight * decay;
+
+    // How far into the session this event was fired (in minutes)
+    const depthMin = Math.max(0, (new Date(ev.ts).getTime() - sessionStart) / 60000);
+    // Caps at 1.5× for events fired 20+ min after session start
+    const depthBonus = Math.min(1.5, 1 + (depthMin / 20) * 0.5);
+
+    const pts = 100 * weight * decay * depthBonus;
 
     for (const cat of (ev.category || [])) {
       map[cat] = (map[cat] || 0) + pts;
@@ -405,6 +416,9 @@ app.get('/widget/config', requireApiKey, (req, res) => {
     platform:       sc.platform        || 'unknown',
     lang:           store.lang         || 'he',
     limit:          store.limit        ?? 20,
+    // tracking flags — enable/disable individual signal types per store
+    trackClicks:    ct.trackClicks     ?? true,
+    trackCarts:     ct.trackCarts      ?? true,
     // cart intercept
     atcPatterns:    ci.urlPatterns      || [],
     checkoutPatterns: ci.checkoutPatterns || [],
@@ -649,7 +663,7 @@ app.post('/promotions/discover', requireApiKey, async (req, res) => {
  * Headers: X-API-Key
  */
 app.post('/pe/signal', requireApiKey, async (req, res) => {
-  const { session_id, event_type, product_id, product_name, category, softCategory } = req.body;
+  const { session_id, event_type, product_id, product_name, category, softCategory, client_ts } = req.body;
   const { dbName } = req.store;
 
   if (!session_id) return res.status(400).json({ error: 'session_id is required' });
@@ -667,9 +681,22 @@ app.post('/pe/signal', requireApiKey, async (req, res) => {
     const client = await getMongoClient();
     const col    = client.db(dbName).collection('profiles');
 
+    const serverNow = new Date();
+
+    // Resolve event timestamp: prefer client_ts for accurate recency scoring.
+    // Accept only if it parses cleanly and is within 5 min of server time
+    // (prevents replay attacks or wildly drifted clocks from corrupting scoring).
+    let eventTs = serverNow;
+    if (client_ts) {
+      const parsed = new Date(client_ts);
+      if (!isNaN(parsed.getTime()) && Math.abs(serverNow - parsed) < 5 * 60 * 1000) {
+        eventTs = parsed;
+      }
+    }
+
     const $inc  = {};
-    const $set  = { updated_at: new Date() };
-    const now   = new Date();
+    const $set  = { updated_at: serverNow };
+    const now   = eventTs; // alias kept for readability below
 
     // Increment soft-category counters
     for (const sc of [].concat(softCategory || []).filter(Boolean)) {
@@ -684,18 +711,20 @@ app.post('/pe/signal', requireApiKey, async (req, res) => {
     const updateOps = {
       $inc,
       $set,
-      $setOnInsert: { session_id, created_at: now },
+      $setOnInsert: { session_id, created_at: serverNow },
     };
 
     // Always push a timestamped recent-event record (capped at last 20).
-    // This powers recency-weighted scoring so the last click dominates.
+    // ts = client-side action time (used for recency scoring + session-depth bonus).
+    // server_ts = server receive time (audit trail, not used in scoring).
     const recentEvent = {
       type:         event_type,
       category:     [].concat(category     || []).filter(Boolean),
       softCategory: [].concat(softCategory || []).filter(Boolean),
       productId:    product_id   || null,
       productName:  product_name || null,
-      ts:           now,
+      ts:           now,          // client action time (accurate for recency decay)
+      server_ts:    serverNow,   // when the server received the signal
     };
     updateOps.$push = {
       ...(updateOps.$push || {}),
@@ -712,7 +741,8 @@ app.post('/pe/signal', requireApiKey, async (req, res) => {
 
     await col.updateOne({ session_id }, updateOps, { upsert: true });
 
-    console.log(`[EVENTS] ${event_type} | session=${session_id} | product=${product_id || '—'}`);
+    const tsLabel = eventTs !== serverNow ? `client_ts=${eventTs.toISOString()}` : 'ts=server';
+    console.log(`[EVENTS] ${event_type} | session=${session_id} | product=${product_id || '—'} | ${tsLabel}`);
     return res.json({ ok: true });
   } catch (err) {
     console.error('[EVENTS]', err.message);
