@@ -995,9 +995,13 @@
   }
 
   // ─── Fetch ────────────────────────────────────────────────────────────────
-  async function fetchPromos() {
+  // instant: true  → triggered by a user click; skip the intro delay, refresh the
+  //                   panel grid immediately and auto-open the panel so the user
+  //                   sees re-ranked results the moment they click.
+  // instant: false → normal boot path; 1500 ms intro delay, suppress if no signals.
+  async function fetchPromos({ instant = false } = {}) {
     const sid = ensureSessionId();
-    log.info(`Fetching promotions… session=${sid} limit=${cfg.limit}`);
+    log.info(`Fetching promotions… session=${sid} limit=${cfg.limit}${instant ? ' [instant]' : ''}`);
     const t0 = Date.now();
     try {
       const body = { limit: cfg.limit, session_id: sid };
@@ -1017,7 +1021,9 @@
         return;
       }
 
-      if (!data.hasSignals) {
+      // On a click-triggered refresh we always show results (the click IS the signal).
+      // On boot we suppress if the session has no signals yet.
+      if (!instant && !data.hasSignals) {
         log.info('No interaction signals for this session yet — card suppressed.');
         return;
       }
@@ -1035,8 +1041,16 @@
 
       renderAffinities(data.profileSnapshot);
 
-      // show card after short delay
-      setTimeout(() => showCard(_products[0]), 1500);
+      if (instant) {
+        // Re-render the panel grid with re-ranked results and open it
+        renderGrid(_products);
+        document.getElementById('pe-overlay').classList.add('pe-open');
+        // Swap the floating card immediately — no delay
+        showCard(_products[0]);
+      } else {
+        // Normal boot: show card after a brief intro delay
+        setTimeout(() => showCard(_products[0]), 1500);
+      }
 
     } catch (err) {
       log.error('Promotions fetch failed:', err.message);
@@ -1055,6 +1069,10 @@
       if (!p) return;
       trackEvent('click', p);
       if (p.url) window.open(p.url, '_blank');
+      // Re-rank immediately after the click signal lands on the server (~300 ms).
+      // The discover endpoint will now rank products matching the clicked category
+      // to the top, so the user sees related items as soon as they click.
+      setTimeout(() => fetchPromos({ instant: true }), 300);
     },
   };
 
